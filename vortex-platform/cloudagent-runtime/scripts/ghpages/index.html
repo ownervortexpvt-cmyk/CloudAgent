@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CloudAgent — Command an army of 1,000 AI agents</title>
+<meta name="description" content="CloudAgent is the AI app builder where one instruction deploys a coordinated agent swarm that plans, codes, reviews and ships real software — real terminal, real deploys, APK & .exe exports, UPI payments.">
+<meta property="og:title" content="CloudAgent — Build apps with a 1,000-agent AI swarm">
+<meta property="og:description" content="One prompt → a coordinated AI army plans, codes, reviews and ships your app. Real Linux terminal, GitHub sync, APK export, UPI payments.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#05070f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05070f; --panel:rgba(255,255,255,.035); --panel2:rgba(255,255,255,.06);
+  --line:rgba(255,255,255,.09); --text:#e9eef7; --muted:#93a0b5;
+  --cyan:#22d3ee; --violet:#a78bfa; --mint:#34d399; --amber:#fbbf24; --rose:#fb7185;
+  --grad:linear-gradient(92deg,#22d3ee 0%,#a78bfa 60%,#34d399 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:Inter,'Noto Sans Bengali',system-ui,-apple-system,sans-serif;
+  line-height:1.6; overflow-x:hidden;
+}
+h1,h2,h3,.display{font-family:'Space Grotesk','Noto Sans Bengali',Inter,sans-serif}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:1120px;margin:0 auto;padding:0 22px}
+section{padding:72px 0}
+.kicker{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;font-size:12.5px;color:var(--muted);background:var(--panel)}
+.h2{font-size:clamp(26px,4vw,40px);line-height:1.15;letter-spacing:-.02em;margin:14px 0 10px}
+.h2 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:var(--muted);max-width:640px;font-size:16px}
+/* background */
+.bg-grid{position:fixed;inset:0;z-index:-2;
+  background-image:linear-gradient(rgba(255,255,255,.033) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.033) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(75% 60% at 50% 0%,#000 30%,transparent 100%)}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);z-index:-3;opacity:.5}
+.b1{width:520px;height:520px;background:#0e7490;top:-180px;left:-120px;animation:drift 14s ease-in-out infinite alternate}
+.b2{width:460px;height:460px;background:#4c1d95;top:-120px;right:-140px;animation:drift 18s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(60px,40px) scale(1.08)}}
+/* nav */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+  background:rgba(5,7,15,.72);border-bottom:1px solid var(--line)}
+.nav-in{display:flex;align-items:center;justify-content:space-between;height:62px}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:19px;letter-spacing:-.02em}
+.logo .bolt{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,#164e63,#4c1d95);border:1px solid var(--line);font-size:16px}
+.nav-links{display:flex;gap:26px;font-size:14px;color:var(--muted)}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{display:flex;gap:10px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:11px 20px;
+  font-weight:600;font-size:14.5px;transition:.2s;cursor:pointer;border:1px solid transparent}
+.btn-primary{background:linear-gradient(92deg,#0891b2,#7c3aed);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.35)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 34px rgba(34,211,238,.4)}
+.btn-ghost{border-color:var(--line);background:var(--panel);color:var(--text)}
+.btn-ghost:hover{background:var(--panel2)}
+.btn-sm{padding:8px 15px;font-size:13.5px;border-radius:10px}
+/* hero */
+.hero{padding:88px 0 58px;text-align:center;position:relative}
+.hero h1{font-size:clamp(34px,6.4vw,66px);line-height:1.06;letter-spacing:-.03em;max-width:820px;margin:20px auto 0;font-weight:700}
+.hero h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bn{font-family:'Noto Sans Bengali',Inter,sans-serif;color:var(--cyan);font-weight:600;font-size:clamp(15px,2.4vw,19px);margin-top:16px}
+.hero .lead{margin:18px auto 0}
+.hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+.hero-note{font-size:13px;color:var(--muted);margin-top:14px}
+.hero-note b{color:var(--amber);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;max-width:860px;margin:44px auto 0}
+.stat{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:18px 14px;text-align:left}
+.stat b{font-family:'Space Grotesk';font-size:26px;display:block;background:var(--grad);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.stat span{font-size:12.5px;color:var(--muted)}
+/* pills */
+.pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 0 8px}
+.pill{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:7px 16px;
+  font-size:13px;color:var(--muted)}
+.pill b{color:var(--text);font-weight:600}
+/* features */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:38px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:24px;transition:.25s}
+.card:hover{transform:translateY(-4px);border-color:rgba(34,211,238,.35);background:var(--panel2)}
+.card .ico{font-size:24px;width:48px;height:48px;display:grid;place-items:center;border-radius:13px;
+  background:rgba(34,211,238,.08);border:1px solid var(--line);margin-bottom:14px}
+.card h3{font-size:16.5px;margin-bottom:8px;letter-spacing:-.01em}
+.card p{font-size:13.5px;color:var(--muted)}
+/* compare */
+.tablewrap{overflow-x:auto;margin-top:36px;border:1px solid var(--line);border-radius:18px;background:var(--panel)}
+table{width:100%;border-collapse:collapse;min-width:720px;font-size:13.5px}
+th,td{padding:13px 18px;text-align:center;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;color:var(--muted);font-weight:500}
+thead th{font-family:'Space Grotesk';font-size:14px;color:var(--text)}
+thead th.us{background:linear-gradient(180deg,rgba(34,211,238,.14),rgba(124,58,237,.10));color:#fff}
+td.us{background:rgba(34,211,238,.05)}
+.yes{color:var(--mint);font-weight:700}
+.no{color:#4b5563}
+tr:last-child td{border-bottom:none}
+/* how */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px}
+.step{position:relative;border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:26px}
+.step .n{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-family:'Space Grotesk';
+  font-weight:700;background:linear-gradient(135deg,#0891b2,#7c3aed);margin-bottom:14px}
+.step h3{font-size:16.5px;margin-bottom:8px}
+.step p{font-size:13.5px;color:var(--muted)}
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:38px}
+.plan{border:1px solid var(--line);background:var(--panel);border-radius:20px;padding:26px;display:flex;flex-direction:column;position:relative}
+.plan.hot{border:1px solid rgba(34,211,238,.5);background:linear-gradient(180deg,rgba(34,211,238,.09),rgba(124,58,237,.06));
+  box-shadow:0 0 44px rgba(34,211,238,.12)}
+.plan .tag{position:absolute;top:-12px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-size:11.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:4px 12px;
+  background:linear-gradient(92deg,#0891b2,#7c3aed);color:#fff}
+.plan .tag.bbd{background:linear-gradient(92deg,#b45309,#f59e0b);color:#1c1004}
+.plan h3{font-size:17px}
+.price{font-family:'Space Grotesk';font-size:34px;font-weight:700;margin:8px 0 2px}
+.price small{font-size:13px;color:var(--muted);font-family:Inter;font-weight:400}
+.tg{font-size:12.5px;color:var(--muted);min-height:32px}
+.plan ul{list-style:none;margin:16px 0 20px;display:grid;gap:8px}
+.plan li{font-size:13px;color:var(--muted);padding-left:22px;position:relative}
+.plan li::before{content:"✓";position:absolute;left:0;color:var(--mint);font-weight:700}
+.plan .btn{margin-top:auto;justify-content:center}
+.plan-note{margin-top:22px;text-align:center;font-size:13px;color:var(--muted)}
+.plan-note b{color:var(--text)}
+/* release */
+.rel{max-width:760px;margin:36px auto 0;display:grid;gap:12px}
+.rel-item{display:flex;gap:16px;border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:16px 20px}
+.rel-item .v{font-family:'Space Grotesk';font-weight:700;color:var(--cyan);min-width:56px}
+.rel-item p{font-size:13.5px;color:var(--muted)}
+.rel-item b{color:var(--text);font-weight:600}
+/* faq */
+details{border:1px solid var(--line);background:var(--panel);border-radius:14px;padding:18px 22px;margin-top:12px;max-width:760px;margin-inline:auto}
+summary{cursor:pointer;font-weight:600;font-size:14.5px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+summary::after{content:"+";color:var(--cyan);font-weight:700}
+details[open] summary::after{content:"–"}
+details p{margin-top:12px;font-size:13.5px;color:var(--muted)}
+/* cta */
+.band{margin:26px auto 0;border:1px solid rgba(34,211,238,.35);border-radius:24px;padding:52px 30px;text-align:center;
+  background:linear-gradient(135deg,rgba(8,145,178,.16),rgba(124,58,237,.14));position:relative;overflow:hidden}
+.band h2{font-size:clamp(24px,3.6vw,36px);letter-spacing:-.02em}
+.band p{color:var(--muted);margin-top:10px}
+/* footer */
+footer{border-top:1px solid var(--line);padding:34px 0 44px;margin-top:70px}
+.foot{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px}
+.foot .bn{font-size:13px;margin:0;color:var(--muted)}
+.foot a{color:var(--text)}
+@media(max-width:960px){
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .plans{grid-template-columns:repeat(2,1fr)}
+  .steps{grid-template-columns:1fr 1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .nav-links{display:none}
+}
+@media(max-width:600px){
+  .grid-4,.plans,.steps{grid-template-columns:1fr}
+  section{padding:54px 0}
+  .hero{padding:64px 0 44px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+
+<nav>
+  <div class="wrap nav-in">
+    <a class="logo" href="#top"><span class="bolt">⚡</span> CloudAgent</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#compare">Compare</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#release">Release log</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <a class="btn btn-ghost btn-sm" href="/login.html">Login</a>
+      <a class="btn btn-primary btn-sm" href="/login.html">Start Free →</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="kicker">⚡ v127 · Made in India · Razorpay secured</span>
+    <h1>Don't prompt a chatbot.<br><span class="g">Command an army of 1,000 agents.</span></h1>
+    <p class="bn">ভাবুন → বলুন → মিনিটেই লাইভ অ্যাপ</p>
+    <p class="lead">CloudAgent is the AI app builder where one instruction deploys a coordinated swarm that plans,
+    codes, reviews and ships real software — with a real terminal, real deploys and real exports.</p>
+    <div class="hero-cta">
+      <a class="btn btn-primary" href="/login.html">🚀 Start Free</a>
+      <a class="btn btn-ghost" href="/login.html">🔑 Login</a>
+      <a class="btn btn-ghost" href="#pricing">See plans · from ₹1,999/mo</a>
+    </div>
+    <p class="hero-note">Every 1st of the month, <b>8 AM – 12 PM IST: the builder opens FREE for 4 hours.</b> No trial, no card.</p>
+    <div class="stats">
+      <div class="stat"><b>1,000</b><span>agents per swarm</span></div>
+      <div class="stat"><b>~5 ms</b><span>API response (prod build)</span></div>
+      <div class="stat"><b>UPI</b><span>native Indian payments</span></div>
+      <div class="stat"><b>24/7</b><span>autonomous schedules</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="pills">
+    <span class="pill"><b>Multi-agent swarm</b> · planner + coders + reviewers</span>
+    <span class="pill"><b>Real Linux terminal</b> · per project</span>
+    <span class="pill"><b>APK & .exe export</b></span>
+    <span class="pill"><b>GitHub</b> two-way sync</span>
+    <span class="pill"><b>Custom domains</b></span>
+    <span class="pill"><b>Scheduled runs</b></span>
+    <span class="pill"><b>Marketplace</b></span>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <span class="kicker">FEATURES</span>
+    <h2 class="h2">Everything a software team does — <span class="g">except the team</span></h2>
+    <p class="lead">Eight production-grade capabilities, all shipped and battle-tested in the live build.</p>
+    <div class="grid-4">
+      <div class="card"><div class="ico">🤖</div><h3>1,000-agent swarm</h3>
+        <p>One prompt becomes a coordinated army: a coordinator plans, quality agents review, hundreds of writers build in parallel lanes. Single-agent tools queue your work — we orchestrate it.</p></div>
+      <div class="card"><div class="ico">🖥️</div><h3>Real terminal, real shell</h3>
+        <p>A genuine Linux terminal per project — install anything, run migrations, debug like a developer. It even self-heals and reconnects after a server restart.</p></div>
+      <div class="card"><div class="ico">📱</div><h3>Ship to APK, .exe and web</h3>
+        <p>Export real installers: Android APK, Electron desktop executables, Docker, or publish straight to the web with custom domains and analytics.</p></div>
+      <div class="card"><div class="ico">💳</div><h3>Pay in ₹, with UPI</h3>
+        <p>Razorpay checkout with PhonePe, GPay, Paytm, cards and netbanking. No dollar cards, no RBI e-mandate failures, no forex markup.</p></div>
+      <div class="card"><div class="ico">🧠</div><h3>No API key? No problem.</h3>
+        <p>Six open-source models (Qwen, DeepSeek, Llama, Gemma, Phi, Mistral) run right on the server — start building with zero AI keys. Or plug in your own providers at your own rates.</p></div>
+      <div class="card"><div class="ico">🐙</div><h3>GitHub built in</h3>
+        <p>Two-way sync: push your project to a repo, clone any repo back in. Private by default, tokens encrypted at rest — and repo-isolation means only your app files ever get pushed.</p></div>
+      <div class="card"><div class="ico">⏰</div><h3>Autonomous schedules</h3>
+        <p>Your agent army fires itself on a timer — nightly refactors, hourly scrapers, cron-style maintenance — with honest run history.</p></div>
+      <div class="card"><div class="ico">🌐</div><h3>Domains, analytics, PWA</h3>
+        <p>Custom domains, privacy-friendly analytics, installable PWA builder output and one-click backups — the unglamorous 20% that makes apps real.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="compare" style="padding-top:8px">
+  <div class="wrap">
+    <span class="kicker">HOW WE COMPARE</span>
+    <h2 class="h2">Built for India, <span class="g">priced for India</span></h2>
+    <p class="lead">The big-name builders are great — if you pay in dollars and work one agent at a time. CloudAgent was designed differently.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Capability</th><th class="us">⚡ CloudAgent</th><th>Lovable</th><th>Replit</th><th>v0</th><th>Bolt</th></tr></thead>
+        <tbody>
+          <tr><td>Entry price</td><td class="us">Big Billion Day — 4 free hrs/month</td><td>$25/mo</td><td>$20–25/mo</td><td>$20/mo</td><td>$20/mo</td></tr>
+          <tr><td>Pay in ₹ with UPI</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+          <tr><td>AI agents per build</td><td class="us">Up to 1,000-agent swarm</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+          <tr><td>Bring your own AI keys</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+          <tr><td>Real Linux terminal</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td><span class="yes">✓</span></td><td class="no">—</td><td>web-only</td></tr>
+          <tr><td>Android APK / desktop .exe export</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td>partial</td><td class="no">—</td><td class="no">—</td></tr>
+          <tr><td>Built-in open-source AI models (no key needed)</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+          <tr><td>Scheduled autonomous runs</td><td class="us"><span class="yes">✓</span></td><td class="no">—</td><td class="no">—</td><td class="no">—</td><td class="no">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="padding-top:8px">
+  <div class="wrap">
+    <span class="kicker">HOW IT WORKS</span>
+    <h2 class="h2">Idea to live app in <span class="g">three moves</span></h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Describe your idea</h3>
+        <p>Type it like you'd tell a developer — in Bangla, English or Hinglish. Attach a sketch, a ZIP or an existing repo.</p></div>
+      <div class="step"><div class="n">2</div><h3>The swarm builds it</h3>
+        <p>Watch files appear live: planner → parallel coders → reviewers. Real terminal, live preview, honest run history at every step.</p></div>
+      <div class="step"><div class="n">3</div><h3>Ship it everywhere</h3>
+        <p>Publish to the web with your own domain, push to GitHub, or export an APK / .exe installer — one click each.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" style="padding-top:8px">
+  <div class="wrap">
+    <span class="kicker">PRICING</span>
+    <h2 class="h2">Transparent monthly plans, <span class="g">paid in ₹</span></h2>
+    <p class="lead">Every plan includes generous token pools — bring your own AI keys and your heavy usage runs at your provider's rates, not ours.</p>
+    <div class="plans">
+      <div class="plan">
+        <span class="tag bbd">Big Billion Day</span>
+        <h3>Free</h3>
+        <div class="price">₹0</div>
+        <div class="tg">1st of every month, 8 AM–12 PM IST — the whole platform opens free</div>
+        <ul>
+          <li>4 free hours every month</li>
+          <li>Pro-level power during the window</li>
+          <li>No card needed</li>
+          <li>Keep what you build</li>
+          <li>Upgrade anytime from ₹1,999/mo</li>
+        </ul>
+        <a class="btn btn-ghost" href="/login.html">Try on BBD</a>
+      </div>
+      <div class="plan">
+        <h3>Pro</h3>
+        <div class="price">₹1,999<small>/mo</small></div>
+        <div class="tg">For solo builders</div>
+        <ul>
+          <li>5 projects</li>
+          <li>100 AI runs / month</li>
+          <li>20-agent swarm</li>
+          <li>2M tokens / month</li>
+          <li>Terminal + deploy</li>
+          <li>Email support</li>
+        </ul>
+        <a class="btn btn-ghost" href="/login.html">Choose Pro</a>
+      </div>
+      <div class="plan">
+        <h3>Pro Plus</h3>
+        <div class="price">₹2,999<small>/mo</small></div>
+        <div class="tg">For growing makers</div>
+        <ul>
+          <li>15 projects</li>
+          <li>300 AI runs / month</li>
+          <li>50-agent swarm</li>
+          <li>6M tokens / month</li>
+          <li>Scheduled runs</li>
+          <li>Priority support</li>
+        </ul>
+        <a class="btn btn-ghost" href="/login.html">Choose Pro Plus</a>
+      </div>
+      <div class="plan hot">
+        <span class="tag">Most popular</span>
+        <h3>Ultra</h3>
+        <div class="price">₹3,999<small>/mo</small></div>
+        <div class="tg">For serious shipping</div>
+        <ul>
+          <li>40 projects</li>
+          <li>800 AI runs / month</li>
+          <li>120-agent swarm</li>
+          <li>15M tokens / month</li>
+          <li>All toolchains</li>
+          <li>Priority support</li>
+        </ul>
+        <a class="btn btn-primary" href="/login.html">Choose Ultra</a>
+      </div>
+      <div class="plan">
+        <h3>Pro Max</h3>
+        <div class="price">₹4,999<small>/mo</small></div>
+        <div class="tg">For power teams</div>
+        <ul>
+          <li>100 projects</li>
+          <li>2,000 AI runs / month</li>
+          <li>300-agent swarm</li>
+          <li>40M tokens / month</li>
+          <li>Custom domains</li>
+          <li>Dedicated support</li>
+        </ul>
+        <a class="btn btn-ghost" href="/login.html">Choose Pro Max</a>
+      </div>
+      <div class="plan">
+        <h3>Ultra Pro Max</h3>
+        <div class="price">₹6,000<small>/mo</small></div>
+        <div class="tg">Unlimited power</div>
+        <ul>
+          <li>400 projects</li>
+          <li>10,000 AI runs / month</li>
+          <li>1,000-agent swarm</li>
+          <li>150M tokens / month</li>
+          <li>Everything unlocked</li>
+          <li>Direct line to the owner</li>
+        </ul>
+        <a class="btn btn-ghost" href="/login.html">Go Ultra Pro Max</a>
+      </div>
+    </div>
+    <p class="plan-note">All paid plans are rolling <b>30-day subscriptions</b> — no lock-in, cancel anytime. Secured by <b>Razorpay</b> · UPI, cards & netbanking.</p>
+  </div>
+</section>
+
+<section id="release" style="padding-top:8px">
+  <div class="wrap">
+    <span class="kicker">RELEASE LOG</span>
+    <h2 class="h2">Shipped hot, <span class="g">every single week</span></h2>
+    <div class="rel">
+      <div class="rel-item"><span class="v">v127</span><p><b>Razorpay Ultra</b> — encrypted server-side key vault, real-time connection health test, TEST/LIVE badge, plan renewal reminders.</p></div>
+      <div class="rel-item"><span class="v">v126</span><p><b>Safe GitHub publish</b> — repo-isolation hardening: only your app files ever get pushed, platform source can never leak.</p></div>
+      <div class="rel-item"><span class="v">v125</span><p><b>Publish engine fixed</b> — auto dependency install, webpack production builds, memory guards. Build errors eliminated at the root.</p></div>
+      <div class="rel-item"><span class="v">v124</span><p><b>⚡ Ultra Speed Pass</b> — pre-warmed flash lane leads every run; DB migrations baseline + workspace orphan sweep.</p></div>
+      <div class="rel-item"><span class="v">v123</span><p><b>World-strongest batch</b> — user GitHub sync, one-click APK, template marketplace, live collaboration, custom-domain publishing.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" style="padding-top:8px">
+  <div class="wrap">
+    <span class="kicker">FAQ</span>
+    <h2 class="h2">Straight answers</h2>
+    <details><summary>Is there a free trial or free plan?</summary>
+      <p>No free trial — the builder is a serious production tool. Instead you get Big Billion Day: on the 1st of EVERY month, 8:00 AM – 12:00 PM IST, the whole platform opens FREE for 4 hours with Pro-level power. No card, no commitment.</p></details>
+    <details><summary>Do I need my own AI API key?</summary>
+      <p>No. The builder ships with built-in AI including open-source models running on our servers — you can create apps from minute one without a single API key. Power users can still attach their own providers (OpenAI, Gemini, Claude, Groq, Ollama…) to run at their own rates.</p></details>
+    <details><summary>How do payments work?</summary>
+      <p>All billing runs through Razorpay: UPI (PhonePe / Google Pay / Paytm), debit/credit cards and netbanking. Monthly plans activate instantly after payment and can be cancelled anytime from your account.</p></details>
+    <details><summary>Do you offer lifetime access?</summary>
+      <p>No — deliberately. CloudAgent is a living product: new models, new toolchains and new features ship every month. Every plan is a rolling 30-day subscription with no lock-in; cancel and renew as you wish.</p></details>
+    <details><summary>Can I get a self-hosted / source license?</summary>
+      <p>Yes — businesses can license CloudAgent with source for on-premise deployment on an annual agreement. Contact us with your use case and team size for a quote.</p></details>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="band">
+      <h2>Ready to build at <span style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">agent speed?</span></h2>
+      <p>Accounts are open to everyone — start free, no credit card, and build at agent speed.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/login.html">Create Free Account →</a>
+        <a class="btn btn-ghost" href="#pricing">See plans</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>⚡ CloudAgent © 2026 · <a href="/login.html">Login</a></span>
+    <span class="bn">ভারতে তৈরি, ভালোবাসা দিয়ে 💙</span>
+    <span>Public web release · open to everyone · from ₹0</span>
+  </div>
+</footer>
+</body>
+</html>

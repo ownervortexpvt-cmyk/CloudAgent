@@ -1,0 +1,16 @@
+{
+  "name": "rakib-portfolio",
+  "version": "1.0.0",
+  "description": "Photographer portfolio website with admin panel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["portfolio", "photography", "website", "admin"],
+  "author": "Rakib",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "steps": [
+    {
+      "name": "login",
+      "delivery": "FAILED"
+    },
+    {
+      "name": "otp-session",
+      "cookieName": "vortex_session"
+    },
+    {
+      "name": "admin-overview",
+      "platforms": 0
+    },
+    {
+      "name": "joy-configure",
+      "status": 201,
+      "ok": true
+    },
+    {
+      "0": "cloud-agent",
+      "1": "vortex-website",
+      "2": "appverse",
+      "name": "platform-keys"
+    }
+  ],
+  "storage": {
+    "active": "joy",
+    "configured": true,
+    "missing": [],
+    "endpoint": "https://nz.in.s3.joy.services",
+    "region": "default",
+    "note": "JOY SERVICES S3 SigV4 is live."
+  },
+  "keys": {
+    "cloud-agent": {
+      "keyId": "pk_e13df976",
+      "scopes": [
+        "projects.read",
+        "projects.write",
+        "builds.write",
+        "storage.read",
+        "storage.write"
+      ],
+      "rawTail": "e66b06"
+    },
+    "vortex-website": {
+      "keyId": "pk_2841d2b9",
+      "scopes": [
+        "sites.read",
+        "sites.write",
+        "deploy.write",
+        "storage.read",
+        "storage.write"
+      ],
+      "rawTail": "9cee02"
+    },
+    "appverse": {
+      "keyId": "pk_fb4f526b",
+      "scopes": [
+        "apps.read",
+        "apps.write",
+        "review.write",
+        "storage.read",
+        "storage.write"
+      ],
+      "rawTail": "53e16e"
+    }
+  }
+}

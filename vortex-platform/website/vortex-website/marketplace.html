@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Apps Marketplace | VORTEX</title>
+  <meta name="description" content="Browse the full VORTEX marketplace — Android APKs, progressive web apps and web applications, with versions, details and direct download links.">
+  <link rel="icon" type="image/png" href="assets/brand-tile-64.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#05070f">
+  <meta name="color-scheme" content="dark">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=20">
+</head>
+<body data-page="marketplace">
+  <div id="announcement-root"></div>
+  <div id="update-banner-root"></div>
+  <header class="site-header" id="site-header"></header>
+
+  <div class="search-strip" id="search-strip"><div class="container">
+        <div class="search-wrap">
+        <svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+        <input class="search-input" id="app-search" type="search" placeholder="Search apps — name, type, feature…" autocomplete="off" aria-label="Search apps">
+        <button type="button" class="s-clear" id="app-search-clear" aria-label="Clear search" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+        </button>
+        </div>
+        <p class="s-count" id="app-search-count" hidden></p>
+      </div></div>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <span class="kicker">Apps marketplace</span>
+        <h1>Everything VORTEX, <span class="grad-text">one shelf.</span></h1>
+        <p>The complete catalogue of VORTEX software. Filter by platform, open any app for details and version history, and download directly — no detours, no third-party mirrors.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+                <div class="filter-bar" role="tablist" aria-label="Filter apps by platform">
+          <button class="filter-btn active" data-filter="all">All apps</button>
+          <button class="filter-btn" data-filter="apk">Android APK</button>
+          <button class="filter-btn" data-filter="exe">Windows EXE</button>
+          <button class="filter-btn" data-filter="pwa">PWA</button>
+          <button class="filter-btn" data-filter="webapp">Web Apps</button>
+        </div>
+        <div class="apps-grid" id="apps-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/apps-data.js?v=20"></script>
+  <script src="js/main.js?v=20"></script>
+  <script src="js/download-manager.js?v=20"></script>
+  <script src="js/pages.js?v=20"></script>
+</body>
+</html>

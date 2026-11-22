@@ -1,0 +1,106 @@
+{
+  "gallery": [
+    {
+      "id": 1,
+      "title": "Urban Landscape",
+      "description": "City architecture at sunset",
+      "image": "https://picsum.photos/seed/photo1/400/300.jpg",
+      "category": "landscape",
+      "date": "2024-01-15",
+      "featured": true
+    },
+    {
+      "id": 2,
+      "title": "Portrait Session",
+      "description": "Professional headshot",
+      "image": "https://picsum.photos/seed/photo2/400/300.jpg",
+      "category": "portrait",
+      "date": "2024-01-20",
+      "featured": true
+    },
+    {
+      "id": 3,
+      "title": "Nature Study",
+      "description": "Wildlife photography",
+      "image": "https://picsum.photos/seed/photo3/400/300.jpg",
+      "category": "nature",
+      "date": "2024-02-01",
+      "featured": false
+    },
+    {
+      "id": 4,
+      "title": "Wedding Moments",
+      "description": "Special day memories",
+      "image": "https://picsum.photos/seed/photo4/400/300.jpg",
+      "category": "wedding",
+      "date": "2024-02-10",
+      "featured": true
+    },
+    {
+      "id": 5,
+      "title": "Street Photography",
+      "description": "Urban life captured",
+      "image": "https://picsum.photos/seed/photo5/400/300.jpg",
+      "category": "street",
+      "date": "2024-02-15",
+      "featured": false
+    },
+    {
+      "id": 6,
+      "title": "Product Shoot",
+      "description": "Commercial photography",
+      "image": "https://picsum.photos/seed/photo6/400/300.jpg",
+      "category": "commercial",
+      "date": "2024-02-20",
+      "featured": true
+    }
+  ],
+  "contacts": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "message": "I'd love to book a photoshoot!",
+      "date": "2024-02-25",
+      "status": "new"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "portrait",
+      "description": "Portrait photography"
+    },
+    {
+      "id": 2,
+      "name": "landscape",
+      "description": "Landscape photography"
+    },
+    {
+      "id": 3,
+      "name": "wedding",
+      "description": "Wedding photography"
+    },
+    {
+      "id": 4,
+      "name": "street",
+      "description": "Street photography"
+    },
+    {
+      "id": 5,
+      "name": "nature",
+      "description": "Nature photography"
+    },
+    {
+      "id": 6,
+      "name": "commercial",
+      "description": "Commercial photography"
+    }
+  ],
+  "stats": {
+    "totalPhotos": 6,
+    "totalContacts": 1,
+    "featuredPhotos": 3,
+    "categories": 6
+  }
+}

@@ -1,0 +1,223 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Cloud Agent — dark-first premium developer-tool aesthetic.
+   Accent palette: amber + teal (no indigo/blue per project rules). */
+:root {
+  --radius: 0.5rem;
+  --background: oklch(0.13 0.012 230);
+  --foreground: oklch(0.95 0.005 230);
+  --card: oklch(0.17 0.014 230);
+  --card-foreground: oklch(0.95 0.005 230);
+  --popover: oklch(0.17 0.014 230);
+  --popover-foreground: oklch(0.95 0.005 230);
+  --primary: oklch(0.78 0.16 75);             /* amber */
+  --primary-foreground: oklch(0.15 0.01 230);
+  --secondary: oklch(0.22 0.012 230);
+  --secondary-foreground: oklch(0.95 0.005 230);
+  --muted: oklch(0.22 0.012 230);
+  --muted-foreground: oklch(0.65 0.01 230);
+  --accent: oklch(0.72 0.13 195);            /* teal */
+  --accent-foreground: oklch(0.13 0.01 230);
+  --destructive: oklch(0.62 0.22 25);
+  --border: oklch(0.26 0.012 230);
+  --input: oklch(0.22 0.012 230);
+  --ring: oklch(0.78 0.16 75);
+  --chart-1: oklch(0.78 0.16 75);
+  --chart-2: oklch(0.72 0.13 195);
+  --chart-3: oklch(0.68 0.18 145);
+  --chart-4: oklch(0.70 0.20 25);
+  --chart-5: oklch(0.75 0.15 305);
+  --sidebar: oklch(0.15 0.012 230);
+  --sidebar-foreground: oklch(0.95 0.005 230);
+  --sidebar-primary: oklch(0.78 0.16 75);
+  --sidebar-primary-foreground: oklch(0.15 0.01 230);
+  --sidebar-accent: oklch(0.22 0.012 230);
+  --sidebar-accent-foreground: oklch(0.95 0.005 230);
+  --sidebar-border: oklch(0.26 0.012 230);
+  --sidebar-ring: oklch(0.78 0.16 75);
+}
+
+/* Light theme — used only when the user explicitly switches via Settings */
+.light {
+  --background: oklch(0.985 0.002 230);
+  --foreground: oklch(0.18 0.012 230);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.012 230);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.012 230);
+  --primary: oklch(0.62 0.18 75);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.005 230);
+  --secondary-foreground: oklch(0.18 0.012 230);
+  --muted: oklch(0.96 0.005 230);
+  --muted-foreground: oklch(0.45 0.012 230);
+  --accent: oklch(0.60 0.13 195);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.58 0.24 25);
+  --border: oklch(0.9 0.005 230);
+  --input: oklch(0.9 0.005 230);
+  --ring: oklch(0.62 0.18 75);
+  --chart-1: oklch(0.62 0.18 75);
+  --chart-2: oklch(0.60 0.13 195);
+  --chart-3: oklch(0.55 0.18 145);
+  --chart-4: oklch(0.62 0.22 25);
+  --chart-5: oklch(0.60 0.20 305);
+  --sidebar: oklch(0.98 0.002 230);
+  --sidebar-foreground: oklch(0.18 0.012 230);
+  --sidebar-primary: oklch(0.62 0.18 75);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.96 0.005 230);
+  --sidebar-accent-foreground: oklch(0.18 0.012 230);
+  --sidebar-border: oklch(0.9 0.005 230);
+  --sidebar-ring: oklch(0.62 0.18 75);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Disable browser's pull-to-refresh so our SwipeRefreshLayout can handle it */
+    overscroll-behavior-y: contain;
+    /* v114 — SCROLL FIX (real phones: "scroll down kaj kore na"):
+       overflow-x:hidden on BOTH html and body turns each into its own scroll
+       container (per spec, visible+hidden computes overflow-y to auto), which
+       is the notorious double-root-scroller pattern that dead-locks wheel and
+       touch scrolling on Chrome/iOS. `clip` clips horizontal overflow WITHOUT
+       creating a scroll container, so the viewport stays the single scroller. */
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    /* v114 — overflow-x:hidden REMOVED from body (see html note above):
+       body must stay a non-scroller or wheel/touch scrolling dies on phones. */
+    /* Use 100dvh so mobile browser UI (address bar) doesn't cover our content.
+       This is critical for mobile — h-screen uses 100vh which includes the area
+       under the address bar, causing the bottom nav to be hidden. */
+    min-height: 100dvh;
+    /* Disable overscroll bounce on mobile (otherwise the whole page moves) */
+    overscroll-behavior: none;
+    /* Prevent text selection on long-press for UI elements (still allows input fields) */
+    -webkit-touch-callout: none;
+    /* Safe area insets for notched devices — handled per-element with env() */
+  }
+  /* Custom scrollbar — slim, dark, matches theme */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: oklch(0.35 0.012 230 / 0.5);
+    border-radius: 4px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.45 0.012 230 / 0.7);
+  }
+  /* Monaco / xterm should not show the custom scrollbar inside their panes */
+  .monaco-editor *::-webkit-scrollbar { width: 12px; height: 12px; }
+  .monaco-editor *::-webkit-scrollbar-thumb {
+    background: oklch(0.40 0.012 230 / 0.6);
+    border-radius: 6px;
+  }
+  /* Inputs should not zoom the viewport on iOS when focused */
+  input, textarea, select {
+    font-size: 16px;
+  }
+  @media (min-width: 768px) {
+    input, textarea, select {
+      font-size: inherit;
+    }
+  }
+  /* Make sure inputs DO allow text selection / callout */
+  input, textarea, [contenteditable] {
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* Cloud Agent specific utilities */
+.ca-grid-bg {
+  background-image:
+    linear-gradient(oklch(1 0 0 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(1 0 0 / 0.025) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+.ca-status-running { color: oklch(0.72 0.18 145); }
+.ca-status-building { color: oklch(0.78 0.16 75); }
+.ca-status-failed { color: oklch(0.65 0.22 25); }
+.ca-status-stopped { color: oklch(0.65 0.012 230); }
+
+.ca-bg-running { background-color: oklch(0.72 0.18 145 / 0.15); }
+.ca-bg-building { background-color: oklch(0.78 0.16 75 / 0.15); }
+.ca-bg-failed { background-color: oklch(0.65 0.22 25 / 0.15); }
+.ca-bg-stopped { background-color: oklch(0.65 0.012 230 / 0.15); }
+
+/* Mobile-optimized: hide resize handles on small screens (touch gestures don't need them) */
+@media (max-width: 1023px) {
+  [data-panel-resize-handle-id] {
+    display: none !important;
+  }
+}
+
+/* Touch targets: minimum 44px on touch devices */
+@media (pointer: coarse) {
+  button, [role="button"], a {
+    min-height: 44px;
+  }
+}
+
+/* v90: swipeable toolbars — horizontally scrollable, scrollbar hidden.
+   Phones: native touch swipe. Desktop: mouse-drag (LivePreview toolbar). */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

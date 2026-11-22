@@ -1,0 +1,11 @@
+{
+  "name": "vx-realtime",
+  "version": "0.8.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  }
+}

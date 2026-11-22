@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login · Vortex CloudAgent</title>
+<meta name="description" content="Sign in or create your free Vortex CloudAgent account — build real apps by chatting with AI agents. Open to everyone.">
+<meta name="theme-color" content="#05070f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet">
+<script>
+/* ============================================================
+   PLATFORM_URL — where the Vortex CloudAgent builder lives right now.
+   The public builder link can rotate after a server refresh;
+   update ONLY this line when it changes. When set, visitors see
+   "Create Free Account" + "Sign in" buttons that go STRAIGHT to
+   the builder's own login/register screens (direct email +
+   password — no email approval, no waiting).
+   Example: const PLATFORM_URL = "https://preview-chat-f8feb3d3-8e9a-41a1-a498-ab5d10d7726e.space-z.ai";
+
+   Two extra ways the page can learn the URL (no redeploy needed):
+     1) ?u=<builder-url>   → one-time link, also remembered in
+        localStorage on that browser.
+     2) localStorage "ca_platform_url" — set automatically by #1.
+   ============================================================ */
+const PLATFORM_URL = "https://preview-chat-f8feb3d3-8e9a-41a1-a498-ab5d10d7726e.space-z.ai";
+</script>
+<style>
+:root{
+  --bg:#05070f; --panel:rgba(255,255,255,.035); --panel2:rgba(255,255,255,.06);
+  --line:rgba(255,255,255,.09); --text:#e9eef7; --muted:#93a0b5;
+  --cyan:#22d3ee; --violet:#a78bfa; --mint:#34d399; --amber:#fbbf24;
+  --grad:linear-gradient(92deg,#22d3ee 0%,#a78bfa 60%,#34d399 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,'Noto Sans Bengali',system-ui,sans-serif;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden}
+.bg-grid{position:fixed;inset:0;z-index:-2;
+  background-image:linear-gradient(rgba(255,255,255,.033) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.033) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(75% 60% at 50% 0%,#000 30%,transparent 100%)}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);z-index:-3;opacity:.5}
+.b1{width:480px;height:480px;background:#0e7490;top:-160px;left:-110px;animation:drift 14s ease-in-out infinite alternate}
+.b2{width:420px;height:420px;background:#4c1d95;bottom:-140px;right:-120px;animation:drift 18s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(50px,36px) scale(1.08)}}
+.card{width:100%;max-width:440px;border:1px solid var(--line);background:var(--panel);
+  border-radius:22px;padding:38px 32px;text-align:center;backdrop-filter:blur(10px)}
+.bolt{width:56px;height:56px;margin:0 auto 16px;display:grid;place-items:center;font-size:26px;
+  border-radius:16px;background:linear-gradient(135deg,#164e63,#4c1d95);border:1px solid var(--line)}
+h1{font-family:'Space Grotesk';font-size:23px;letter-spacing:-.02em;margin-bottom:8px}
+.sub{color:var(--muted);font-size:13.5px;line-height:1.65;margin-bottom:24px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;
+  padding:13px 22px;font-weight:600;font-size:15px;text-decoration:none;transition:.2s;border:1px solid transparent;width:100%}
+.btn-primary{background:linear-gradient(92deg,#0891b2,#7c3aed);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.35)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 12px 34px rgba(34,211,238,.4)}
+.btn-ghost{border-color:var(--line);background:var(--panel);color:var(--text);font-size:13.5px;padding:11px 18px}
+.btn-ghost:hover{background:var(--panel2)}
+.back{display:inline-block;margin-top:18px;color:var(--muted);font-size:13px;text-decoration:none}
+.back:hover{color:var(--text)}
+.steps{list-style:none;text-align:left;margin:0 0 22px;display:grid;gap:10px}
+.steps li{font-size:13px;color:var(--muted);padding-left:26px;position:relative;line-height:1.55}
+.steps li b{color:var(--text);font-weight:600}
+.steps li::before{content:"✓";position:absolute;left:2px;color:var(--mint);font-weight:700}
+.lock{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;
+  padding:5px 13px;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--mint);
+  background:rgba(52,211,153,.08);margin-bottom:16px}
+.note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.6}
+.note a{color:var(--cyan);text-decoration:none}
+.hidden{display:none}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+
+<div class="card">
+  <div class="bolt">⚡</div>
+  <span class="lock">⚡ Open · Direct login</span>
+  <h1>Welcome to Vortex CloudAgent</h1>
+  <p class="sub">Build real apps by chatting with an army of AI agents. Sign in or create a
+  free account in minutes — email + password, no approval wait.</p>
+
+  <div id="enterWrap" class="hidden">
+    <a id="enterRegister" class="btn btn-primary" href="#">Create Free Account →</a>
+    <a id="enterLogin" class="btn btn-ghost" style="margin-top:10px" href="#">Sign in →</a>
+  </div>
+
+  <div id="noLink">
+    <ul class="steps">
+      <li><b>Open the Vortex CloudAgent builder</b> — use the workspace link you received with your welcome message.</li>
+      <li><b>Sign in directly</b> — your email + password works instantly; new here? "Create account" is open to everyone.</li>
+      <li><b>Pick your plan in-app</b> — pay via UPI; the plan activates right after quick verification.</li>
+    </ul>
+    <p class="sub" style="margin-bottom:0">Got the workspace link as <b>?u=…</b>? This page remembers it and unlocks the buttons above.</p>
+  </div>
+
+  <p class="note">Lost your workspace link? <a href="mailto:mdhonabali61@gmail.com">Email us</a> and we'll resend it.</p>
+  <a class="back" href="/">← Back to cloudagent-web</a>
+</div>
+
+<script>
+(function () {
+  var KEY = 'ca_platform_url';
+  function valid(u) {
+    try { var p = new URL(u); return p.protocol === 'https:' || p.protocol === 'http:'; }
+    catch (e) { return false; }
+  }
+  function show(url) {
+    var u = String(url).trim().replace(/\/+$/, '');
+    document.getElementById('enterWrap').classList.remove('hidden');
+    document.getElementById('enterRegister').href = u + '/register';
+    document.getElementById('enterLogin').href = u + '/login';
+    document.getElementById('noLink').classList.add('hidden');
+  }
+  // 1) ?u= override (or #u= for cleaner sharing) — remembered on this browser
+  var fromLink = '';
+  try {
+    fromLink = new URLSearchParams(location.search).get('u') || '';
+    if (!fromLink && location.hash.indexOf('#u=') === 0) fromLink = decodeURIComponent(location.hash.slice(3));
+    fromLink = (fromLink || '').trim();
+    if (valid(fromLink)) { try { localStorage.setItem(KEY, fromLink); } catch (e) {} }
+    else fromLink = '';
+  } catch (e) { fromLink = ''; }
+  // 2) remembered value beats the baked default (owner can refresh without redeploy)
+  var saved = '';
+  try { saved = localStorage.getItem(KEY) || ''; } catch (e) {}
+  var BAKED = (typeof PLATFORM_URL === 'string' && PLATFORM_URL.trim()) ? PLATFORM_URL.trim() : '';
+  var picked = fromLink || (valid(saved) ? saved : '') || BAKED;
+  if (picked) show(picked);
+
+  // 3) reachability guard — if the picked URL is dead (e.g. the workspace
+  //    moved after a server refresh), silently fall back to the baked URL.
+  function probe(u) {
+    return new Promise(function (res) {
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; res(false); } }, 5000);
+      fetch(u + '/api/version', { mode: 'no-cors', cache: 'no-store' })
+        .then(function () { if (!done) { done = true; clearTimeout(t); res(true); } })
+        .catch(function () { if (!done) { done = true; clearTimeout(t); res(false); } });
+    });
+  }
+  if (picked) {
+    probe(picked.replace(/\/+$/, '')).then(function (alive) {
+      if (alive) return;
+      if (BAKED && picked.replace(/\/+$/, '') !== BAKED.replace(/\/+$/, '')) {
+        try { localStorage.removeItem(KEY); } catch (e) {}
+        show(BAKED); // dead link → the owner's current default
+      } else {
+        var n = document.querySelector('.note');
+        if (n) n.innerHTML = 'The workspace seems to be waking up or has moved. <a href="mailto:mdhonabali61@gmail.com">Email us</a> and we\u2019ll send the fresh link.';
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

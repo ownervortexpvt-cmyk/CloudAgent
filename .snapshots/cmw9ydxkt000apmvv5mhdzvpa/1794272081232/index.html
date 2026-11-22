@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>My Todo List</h1>
+                <div class="header-actions">
+                    <button id="searchBtn" class="icon-btn" title="Search">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                    <button id="profileBtn" class="icon-btn" title="Profile">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Todo Screen -->
+            <div id="todoScreen" class="screen active">
+                <div class="input-section">
+                    <div class="input-container">
+                        <input type="text" id="todoInput" placeholder="Add a new task..." autocomplete="off">
+                        <button id="addBtn">Add</button>
+                    </div>
+                    <div class="filter-tabs">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="active">Active</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                    </div>
+                </div>
+
+                <div class="todo-container">
+                    <div id="emptyState" class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"></path>
+                            <rect x="9" y="3" width="6" height="4" rx="2"></rect>
+                            <line x1="9" y1="12" x2="15" y2="12"></line>
+                            <line x1="9" y1="16" x2="13" y2="16"></line>
+                        </svg>
+                        <p>No tasks yet. Add one above!</p>
+                    </div>
+
+                    <ul id="todoList" class="todo-list"></ul>
+
+                    <div class="stats-section">
+                        <div class="stats">
+                            <span id="totalTasks">Total: 0</span>
+                            <span id="completedTasks">Completed: 0</span>
+                            <span id="remainingTasks">Remaining: 0</span>
+                        </div>
+                        <button id="clearAll" class="clear-all">Clear All Completed</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Screen -->
+            <div id="searchScreen" class="screen">
+                <div class="search-header">
+                    <button id="backFromSearch" class="back-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="search-input-container">
+                        <input type="text" id="searchInput" placeholder="Search tasks..." autocomplete="off">
+                        <span class="search-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <path d="m21 21-4.35-4.35"></path>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
+            <!-- Profile Screen -->
+            <div id="profileScreen" class="screen">
+                <div class="profile-header">
+                    <button id="backFromProfile" class="back-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    <h2>Profile</h2>
+                </div>
+
+                <div class="profile-content">
+                    <div class="profile-info">
+                        <div class="avatar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <div class="user-details">
+                            <h3>Todo User</h3>
+                            <p>Member since <span id="memberSince"></span></p>
+                        </div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalTasksStat">0</div>
+                            <div class="stat-label">Total Tasks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completedTasksStat">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="completionRateStat">0%</div>
+                            <div class="stat-label">Completion Rate</div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Settings</h3>
+                        <div class="setting-item">
+                            <label for="notifications">Notifications</label>
+                            <input type="checkbox" id="notifications" checked>
+                        </div>
+                        <div class="setting-item">
+                            <label for="darkMode">Dark Mode</label>
+                            <input type="checkbox" id="darkMode">
+                        </div>
+                        <div class="setting-item">
+                            <label for="autoClear">Auto-clear completed after 7 days</label>
+                            <input type="checkbox" id="autoClear">
+                        </div>
+                    </div>
+
+                    <button id="exportData" class="export-btn">Export Data</button>
+                    <button id="clearAllData" class="danger-btn">Clear All Data</button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="screen loading-state">
+                <div class="loading-spinner"></div>
+                <p>Loading your tasks...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorState" class="screen error-state">
+                <div class="error-content">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <h2>Error</h2>
+                    <p id="errorMessage">Something went wrong. Please try again.</p>
+                    <button id="retryBtn">Retry</button>
+                </div>
+            </div>
+
+            <!-- Notification -->
+            <div id="notification" class="notification"></div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+
+    <footer>
+        Built by Cloud Agent
+    </footer>
+</body>
+</html>

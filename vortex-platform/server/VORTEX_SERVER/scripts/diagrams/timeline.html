@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root { --text: #111827; --text-sub: #6B7280; --border: #E5E7EB; --connector: #94A3B8; }
+  body { font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif; background: #FFFFFF; color: var(--text); -webkit-font-smoothing: antialiased; }
+  #root { width: fit-content; min-width: 940px; margin: 0 auto; padding: 44px 44px 36px; background: #FFFFFF; }
+
+  .flow-title { font-size: 24px; font-weight: 700; text-align: center; }
+  .flow-subtitle { font-size: 14px; color: var(--text-sub); text-align: center; margin-top: 6px; margin-bottom: 30px; }
+
+  .phase-group { border-radius: 12px; padding: 14px 18px 16px; margin-bottom: 0; background: #F8FAFC; }
+  .phase-title {
+    font-size: 16.5px; font-weight: 700; padding: 9px 14px; border-radius: 8px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  }
+  .phase-title .goal { font-size: 12.5px; font-weight: 600; opacity: 0.75; text-align: right; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding-left: 4px; }
+  .chip {
+    background: #FFFFFF; border: 1.5px solid #7B8FA3; border-radius: 7px;
+    padding: 6px 12px; font-size: 13.5px; font-weight: 600; color: #334155;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04); white-space: nowrap;
+  }
+  .arrow { text-align: center; color: var(--connector); font-size: 20px; line-height: 1; margin: 6px 0; }
+
+  /* Scheme B: neutral gray base + blue accent progression (7 phases) */
+  .p1 { background: #F8FAFC; } .p1 .phase-title { background: #F1F5F9; color: #334155; border-left: 4px solid #94A3B8; } .p1 .chip { border-color: #94A3B8; color: #475569; }
+  .p2 { background: #F7F9FB; } .p2 .phase-title { background: #EDF1F5; color: #2D4156; border-left: 4px solid #7B8FA3; } .p2 .chip { border-color: #7B8FA3; color: #2D4156; }
+  .p3 { background: #F4F7FA; } .p3 .phase-title { background: #E8EDF3; color: #2D4156; border-left: 4px solid #6B809A; } .p3 .chip { border-color: #6B809A; color: #2D4156; }
+  .p4 { background: #F1F5F9; } .p4 .phase-title { background: #E2E8F0; color: #283C52; border-left: 4px solid #5B7590; } .p4 .chip { border-color: #5B7590; color: #283C52; }
+  .p5 { background: #EFF3F7; } .p5 .phase-title { background: #DAE1EB; color: #23364D; border-left: 4px solid #4B6A87; } .p5 .chip { border-color: #4B6A87; color: #23364D; }
+  .p6 { background: #EDF1F5; } .p6 .phase-title { background: #D2DAE5; color: #1E3048; border-left: 4px solid #3B5F7D; } .p6 .chip { border-color: #3B5F7D; color: #1E3048; }
+  .p7 { background: #EBEFF4; border: 1.6px dashed #8FA3B8; }
+  .p7 .phase-title { background: #CAD3E0; color: #192A3E; border-left: 4px solid #2B5473; }
+  .p7 .chip { border-color: #2B5473; color: #192A3E; border-style: dashed; }
+
+  .legend {
+    display: flex; gap: 22px; justify-content: center; margin-top: 24px; padding: 12px 20px;
+    background: #F9FAFB; border-radius: 8px; border: 1px solid #E5E7EB;
+    font-size: 12.5px; color: #4B5563;
+  }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+  .legend .sw { width: 14px; height: 14px; border-radius: 4px; border: 2px solid #3B5F7D; background: #FFFFFF; }
+  .legend .sw.dash { border-style: dashed; border-color: #8FA3B8; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="flow-title">VORTEX রোডম্যাপ — সাতটি ধাপ</div>
+  <div class="flow-subtitle">প্রতিটি ধাপের ন্যূনতম সংস্করণ বানিয়ে পরের ধাপে যাওয়াই নিয়ম; ধাপ ৭ ভবিষ্যতের জন্য সংরক্ষিত</div>
+
+  <div class="phase-group p1">
+    <div class="phase-title"><span>ধাপ ১ — ভিত্তি: পরিচয় ও নিয়ন্ত্রণ</span><span class="goal">সব অ্যাপের লগইন এক জায়গায়</span></div>
+    <div class="chips">
+      <div class="chip">VORTEX CORE (minimal)</div>
+      <div class="chip">AUTH + VORTEX ID</div>
+      <div class="chip">OTP</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p2">
+    <div class="phase-title"><span>ধাপ ২ — কম্পিউট ও নেটওয়ার্ক</span><span class="goal">সার্ভার provision + আইসোলেশন</span></div>
+    <div class="chips">
+      <div class="chip">SERVER</div>
+      <div class="chip">NETWORK (IP, DNS, Firewall)</div>
+      <div class="chip">Basic Security Hardening</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p3">
+    <div class="phase-title"><span>ধাপ ৩ — ডেটা ও সুরক্ষা</span><span class="goal">ডেটার জন্ম থেকেই ব্যাকআপ</span></div>
+    <div class="chips">
+      <div class="chip">DATABASE</div>
+      <div class="chip">BACKUP (3-2-1)</div>
+      <div class="chip">MONITOR (basic)</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p4">
+    <div class="phase-title"><span>ধাপ ৪ — সার্ভিস স্তর</span><span class="goal">অ্যাপগুলোর জন্য API ও জায়গা</span></div>
+    <div class="chips">
+      <div class="chip">API (internal)</div>
+      <div class="chip">STORAGE (object)</div>
+      <div class="chip">FILES</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p5">
+    <div class="phase-title"><span>ধাপ ৫ — নিরাপত্তা ও অপারেশন</span><span class="goal">কেন্দ্রীয় নজরদারি ও ডেপ্লয়</span></div>
+    <div class="chips">
+      <div class="chip">SECURITY (central)</div>
+      <div class="chip">ADMIN (কোটা সহ)</div>
+      <div class="chip">DEPLOY</div>
+      <div class="chip">DEVOPS</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p6">
+    <div class="phase-title"><span>ধাপ ৬ — প্রসারণ</span><span class="goal">দরকার অনুযায়ী সাজানো</span></div>
+    <div class="chips">
+      <div class="chip">MAIL</div>
+      <div class="chip">NOTIFY</div>
+      <div class="chip">CDN</div>
+      <div class="chip">COMPUTE</div>
+      <div class="chip">AI INFRASTRUCTURE</div>
+      <div class="chip">GLOBAL INFRASTRUCTURE</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="phase-group p7">
+    <div class="phase-title"><span>ধাপ ৭ — Firebase Mode (সংরক্ষিত)</span><span class="goal">যেদিন সিদ্ধান্ত নামবে, সেদিন</span></div>
+    <div class="chips">
+      <div class="chip">Multi-tenant</div>
+      <div class="chip">BILLING</div>
+      <div class="chip">Developer Portal</div>
+      <div class="chip">Public API Docs</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="item"><div class="sw"></div>ধাপ ১–৬: বর্তমান পরিকল্পনার অংশ</div>
+    <div class="item"><div class="sw dash"></div>ধাপ ৭: ভবিষ্যৎ সংরক্ষিত — আজকের ৫টি future-proofing নিয়ম মানলেই দরজা খোলা থাকবে</div>
+  </div>
+</div>
+</body>
+</html>

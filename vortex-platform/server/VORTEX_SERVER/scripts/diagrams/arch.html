@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --text: #111827; --text-sub: #6B7280; --border: #E5E7EB; --connector: #94A3B8;
+  }
+  body {
+    font-family: 'Noto Sans Bengali', 'Nirmala UI', sans-serif;
+    background: #FFFFFF; color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  #root { width: fit-content; min-width: 980px; margin: 0 auto; padding: 44px 44px 36px; background: #FFFFFF; }
+
+  .flow-title { font-size: 24px; font-weight: 700; text-align: center; }
+  .flow-subtitle { font-size: 14px; color: var(--text-sub); text-align: center; margin-top: 6px; margin-bottom: 34px; }
+
+  .layer {
+    border-radius: 12px; padding: 16px 20px 18px;
+    display: flex; gap: 20px; align-items: stretch;
+  }
+  .layer-label {
+    flex: 0 0 148px; display: flex; flex-direction: column; justify-content: center;
+    font-size: 15px; font-weight: 700; line-height: 1.45;
+    border-right: 2px solid rgba(0,0,0,0.10); padding-right: 14px;
+  }
+  .layer-label .en { font-size: 11.5px; font-weight: 600; color: var(--text-sub); margin-top: 2px; letter-spacing: 0.4px; }
+  .chips { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-content: center; }
+  .chip {
+    background: #FFFFFF; border: 1.6px solid #5B7A99; border-radius: 8px;
+    padding: 8px 14px; font-size: 14.5px; font-weight: 600; color: #1E3A5F;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05); white-space: nowrap;
+  }
+  .chip small { display: block; font-size: 11px; font-weight: 500; color: var(--text-sub); margin-top: 1px; }
+  .chip.muted { border-color: #94A3B8; color: #475569; }
+
+  .l1 { background: #F0F4F8; border-left: 4px solid #64748B; }
+  .l1 .layer-label { color: #334155; }
+  .l2 { background: #E8EDF2; border-left: 4px solid #1B6B7A; }
+  .l2 .layer-label { color: #14424A; }
+  .l2 .chip { border-color: #1B6B7A; color: #14424A; background: #F3FAFB; }
+  .l3 { background: #E0E7EF; border-left: 4px solid #4A6B8A; }
+  .l3 .layer-label { color: #1E3050; }
+  .l4 { background: #D8E0EA; border-left: 4px solid #3A5C7A; }
+  .l4 .layer-label { color: #172540; }
+  .l5 { background: #D0DAE5; border-left: 4px solid #2B5473; }
+  .l5 .layer-label { color: #16202F; }
+
+  .arrow { text-align: center; color: var(--connector); font-size: 22px; line-height: 1; margin: 7px 0; }
+
+  .footnote {
+    margin-top: 26px; text-align: center; font-size: 13px; color: var(--text-sub);
+    background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px;
+  }
+  .footnote b { color: #334155; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="flow-title">VORTEX আর্কিটেকচার — স্তরভিত্তিক নকশা</div>
+  <div class="flow-subtitle">উপরের স্তরগুলো নিচের স্তরের উপর নির্ভর করে; প্রতিটি অ্যাপ নিজের কোটায় আইসোলেটেড থাকে</div>
+
+  <div class="layer l1">
+    <div class="layer-label">অ্যাপ স্তর<span class="en">APPLICATIONS</span></div>
+    <div class="chips">
+      <div class="chip">AI App Builder</div>
+      <div class="chip">NEXSEVA</div>
+      <div class="chip">NEXA</div>
+      <div class="chip">FLAREX</div>
+      <div class="chip">App Store</div>
+      <div class="chip">Web Store</div>
+      <div class="chip muted">…৪৬+ অ্যাপ</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="layer l2">
+    <div class="layer-label">পরিচয় ও API স্তর<span class="en">IDENTITY + API GATEWAY</span></div>
+    <div class="chips">
+      <div class="chip">VORTEX ID<small>SSO লগইন, OTP, সেশন</small></div>
+      <div class="chip">VORTEX API<small>Gateway, Rate Limit</small></div>
+      <div class="chip">API Key ইস্যু<small>app ভিত্তিক অ্যাক্সেস</small></div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="layer l3">
+    <div class="layer-label">নিয়ন্ত্রণ স্তর<span class="en">VORTEX CORE (CONTROL PLANE)</span></div>
+    <div class="chips">
+      <div class="chip">Central Dashboard</div>
+      <div class="chip">Server / DB / Storage ম্যানেজমেন্ট</div>
+      <div class="chip">Admin ও কোটা</div>
+      <div class="chip">Service Registry</div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="layer l4">
+    <div class="layer-label">ডেটা স্তর<span class="en">DATA LAYER</span></div>
+    <div class="chips">
+      <div class="chip">DATABASE<small>PostgreSQL</small></div>
+      <div class="chip">STORAGE<small>SeaweedFS (S3)</small></div>
+      <div class="chip">FILES</div>
+      <div class="chip">BACKUP<small>restic + ভার্সনিং</small></div>
+    </div>
+  </div>
+  <div class="arrow">&#8595;</div>
+
+  <div class="layer l5">
+    <div class="layer-label">ভিত্তি স্তর<span class="en">INFRASTRUCTURE</span></div>
+    <div class="chips">
+      <div class="chip">SERVER<small>KVM / libvirt</small></div>
+      <div class="chip">NETWORK<small>DNS, Firewall, VPN</small></div>
+      <div class="chip">SECURITY</div>
+      <div class="chip">MONITOR<small>Prometheus</small></div>
+    </div>
+  </div>
+
+  <div class="footnote">সব স্তরের নিচে থাকবে <b>নিজস্ব হার্ডওয়্যার ও 3-2-1 ব্যাকআপ</b> — সব ডেটা তোমার নিয়ন্ত্রণে, কোনো তৃতীয় পক্ষ নয়</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rakib - Photographer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #252525;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --accent: #ff6b6b;
+      --accent-hover: #ff5252;
+      --border: #333333;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Smooth Scrolling */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(10, 10, 10, 0.95);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      padding: 1rem 0;
+      transition: var(--transition);
+    }
+
+    nav.scrolled {
+      padding: 0.5rem 0;
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .nav-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .logo:hover {
+      color: var(--accent);
+    }
+
+    .nav-links {
+      display: flex;
+      list-style: none;
+      gap: 2rem;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: var(--transition);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    /* Hero Section */
+    .hero {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: radial-gradient(ellipse at center, #1a1a1a 0%, var(--bg-primary) 100%);
+    }
+
+    .hero-content {
+      text-align: center;
+      z-index: 2;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 6rem);
+      font-weight: 300;
+      letter-spacing: 5px;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      letter-spacing: 3px;
+      margin-bottom: 2rem;
+      font-style: italic;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+      letter-spacing: 2px;
+      font-size: 0.9rem;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--accent);
+      transition: var(--transition);
+      z-index: -1;
+    }
+
+    .cta-button:hover {
+      color: var(--bg-primary);
+      border-color: var(--accent-hover);
+    }
+
+    .cta-button:hover::before {
+      left: 0;
+    }
+
+    /* Gallery Section */
+    .gallery {
+      padding: 5rem 0;
+      background: var(--bg-secondary);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: 300;
+      letter-spacing: 3px;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .gallery-item {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      aspect-ratio: 4/3;
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(255, 107, 107, 0.2);
+    }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.1);
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .gallery-item:hover .gallery-overlay {
+      opacity: 1;
+    }
+
+    .gallery-overlay i {
+      font-size: 2rem;
+      color: var(--accent);
+    }
+
+    /* About Section */
+    .about {
+      padding: 5rem 0;
+      background: var(--bg-primary);
+    }
+
+    .about-content {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .about-image {
+      position: relative;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .about-image img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .about-text h2 {
+      font-size: 2.5rem;
+      font-weight: 300;
+      letter-spacing: 2px;
+      margin-bottom: 1.5rem;
+    }
+
+    .about-text p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      line-height: 1.8;
+      margin-bottom: 1.5rem;
+    }
+
+    .about-text .highlight {
+      color: var(--accent);
+      font-weight: 400;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .social-links a {
+      color: var(--text-secondary);
+      font-size: 1.5rem;
+      transition: var(--transition);
+    }
+
+    .social-links a:hover {
+      color: var(--accent);
+      transform: translateY(-3px);
+    }
+
+
+
+    /* Contact Section */
+    .contact {
+      padding: 5rem 0;
+      background: var(--bg-secondary);
+    }
+
+    .contact-form {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .form-group {
+      margin-bottom: 2rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 1rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-family: 'Georgia', serif;
+      font-size: 1rem;
+      transition: var(--transition);
+      border-radius: 4px;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: var(--bg-primary);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 1rem;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .submit-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: var(--accent);
+      transition: var(--transition);
+      z-index: -1;
+    }
+
+    .submit-btn:hover {
+      color: var(--bg-primary);
+      border-color: var(--accent-hover);
+    }
+
+    .submit-btn:hover::before {
+      left: 0;
+    }
+
+    /* Footer */
+    footer {
+      padding: 2rem 0;
+      background: var(--bg-primary);
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-text {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      padding: 1rem 2rem;
+      border-radius: 4px;
+      border-left: 4px solid var(--accent);
+      transform: translateX(400px);
+      transition: var(--transition);
+      z-index: 1001;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+    }
+
+    /* Testimonials Section Styling */
+    #testimonials {
+      background: var(--bg-secondary);
+    }
+
+    #testimonials .container {
+      max-width: 1200px;
+    }
+
+    #testimonials .section-title {
+      font-size: 2.5rem;
+      font-weight: 300;
+      letter-spacing: 3px;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    #testimonials .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    #testimonials .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    #testimonials .bg-gray-800 {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      transition: var(--transition);
+      border-radius: 8px;
+    }
+
+    #testimonials .bg-gray-800:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(255, 107, 107, 0.2);
+    }
+
+    #testimonials .text-yellow-400 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      line-height: 1;
+      color: #fbbf24;
+    }
+
+    #testimonials .text-gray-300 {
+      color: var(--text-secondary);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    #testimonials .text-white {
+      color: var(--text-primary);
+    }
+
+    #testimonials .text-gray-400 {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    #testimonials .font-semibold {
+      font-weight: 600;
+    }
+
+    #testimonials .mb-4 {
+      margin-bottom: 1rem;
+    }
+
+    #testimonials .mb-12 {
+      margin-bottom: 3rem;
+    }
+
+    #testimonials .w-12 {
+      width: 3rem;
+    }
+
+    #testimonials .h-12 {
+      height: 3rem;
+    }
+
+    #testimonials .rounded-full {
+      border-radius: 50%;
+    }
+
+    #testimonials .mr-4 {
+      margin-right: 1rem;
+    }
+
+    #testimonials .flex {
+      display: flex;
+    }
+
+    #testimonials .items-center {
+      align-items: center;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .nav-links {
+        display: none;
+      }
+
+      .about-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .gallery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="navbar">
+    <div class="nav-container">
+      <a href="#home" class="logo">RAKIB</a>
+      <ul class="nav-links">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#gallery">Gallery</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="hero-content">
+      <h1>Rakib</h1>
+      <p class="subtitle">Capturing Life's Beautiful Moments</p>
+      <a href="#gallery" class="cta-button">View My Work</a>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section id="gallery" class="gallery">
+    <div class="container">
+      <h2 class="section-title">Gallery</h2>
+      <div class="gallery-grid">
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo1/400/300.jpg" alt="Photography 1">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo2/400/300.jpg" alt="Photography 2">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo3/400/300.jpg" alt="Photography 3">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo4/400/300.jpg" alt="Photography 4">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo5/400/300.jpg" alt="Photography 5">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+        <div class="gallery-item">
+          <img src="https://picsum.photos/seed/photo6/400/300.jpg" alt="Photography 6">
+          <div class="gallery-overlay">
+            <i class="fas fa-search-plus"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="about">
+    <div class="container">
+      <h2 class="section-title">About</h2>
+      <div class="about-content">
+        <div class="about-image">
+          <img src="https://picsum.photos/seed/photographer/400/500.jpg" alt="Rakib">
+        </div>
+        <div class="about-text">
+          <h2>Behind the Lens</h2>
+          <p>
+            I'm <span class="highlight">Rakib</span>, a passionate photographer with an eye for capturing life's most precious moments. With over a decade of experience in the field, I specialize in portrait, landscape, and street photography.
+          </p>
+          <p>
+            My journey in photography began with a simple camera and a dream to freeze time. Each photograph tells a story, and I'm dedicated to telling yours with authenticity and artistry. Whether it's a wedding, a corporate event, or a personal portrait session, I approach every shoot with the same passion and attention to detail.
+          </p>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="testimonials" class="py-16 bg-gray-900">
+    <div class="container">
+      <h2 class="section-title">What Our Clients Say</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Testimonial 1 -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <div class="text-yellow-400 text-4xl mb-4">"</div>
+          <p class="text-gray-300 italic mb-4">"Rakib's photography skills are exceptional. He captured our wedding day perfectly, every moment was framed beautifully. The attention to detail and artistic vision is unmatched."</p>
+          <div class="flex items-center">
+            <img src="https://i.pravatar.cc/150?img=1" alt="Sarah Johnson" class="w-12 h-12 rounded-full mr-4">
+            <div>
+              <h4 class="text-white font-semibold">Sarah Johnson</h4>
+              <p class="text-gray-400 text-sm">Newlywed, Wedding Photography</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <div class="text-yellow-400 text-4xl mb-4">"</div>
+          <p class="text-gray-300 italic mb-4">"Professional, reliable, and incredibly talented. Rakib transformed our corporate event into a visual masterpiece. The team was impressed with the quality and creativity."</p>
+          <div class="flex items-center">
+            <img src="https://i.pravatar.cc/150?img=2" alt="Marcus Chen" class="w-12 h-12 rounded-full mr-4">
+            <div>
+              <h4 class="text-white font-semibold">Marcus Chen</h4>
+              <p class="text-gray-400 text-sm">Event Coordinator, TechFlow Solutions</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 3 -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+          <div class="text-yellow-400 text-4xl mb-4">"</div>
+          <p class="text-gray-300 italic mb-4">"Working with Rakib was an absolute pleasure. He listened to our vision and delivered stunning portraits that exceeded all expectations. Highly recommended for any photography needs."</p>
+          <div class="flex items-center">
+            <img src="https://i.pravatar.cc/150?img=3" alt="Elena Rodriguez" class="w-12 h-12 rounded-full mr-4">
+            <div>
+              <h4 class="text-white font-semibold">Elena Rodriguez</h4>
+              <p class="text-gray-400 text-sm">CEO, GreenLeaf Marketing</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="contact">
+    <div class="container">
+      <h2 class="section-title">Get In Touch</h2>
+      <form class="contact-form" id="contactForm">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="message">Message</label>
+          <textarea id="message" name="message" required></textarea>
+        </div>
+        <button type="submit" class="submit-btn">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p class="footer-text">&copy; 2024 Rakib. All rights reserved.</p>
+  </footer>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    Message sent successfully!
+  </div>
+
+  <script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', function() {
+      const navbar = document.getElementById('navbar');
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // Smooth scroll for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+
+    // Gallery item click handler
+    document.querySelectorAll('.gallery-item').forEach(item => {
+      item.addEventListener('click', function() {
+        // In a real implementation, this would open a lightbox
+        console.log('Gallery item clicked');
+      });
+    });
+
+    // Contact form submission
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Get form data
+      const formData = new FormData(this);
+      const name = formData.get('name');
+      const email = formData.get('email');
+      const message = formData.get('message');
+      
+      // Show toast notification
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      
+      // Reset form
+      this.reset();
+      
+      // Hide toast after 3 seconds
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    });
+
+    // Add parallax effect to hero section
+    window.addEventListener('scroll', function() {
+      const scrolled = window.pageYOffset;
+      const hero = document.querySelector('.hero');
+      hero.style.transform = `translateY(${scrolled * 0.5}px)`;
+    });
+  </script>
+</body>
+</html>

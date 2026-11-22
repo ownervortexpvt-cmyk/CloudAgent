@@ -1,0 +1,1550 @@
+// ============================================================
+// VORTEX — Private Infrastructure Control Plane
+// Data model (Phase 1: CORE + AUTH + OTP)
+//
+// Design rules (locked):
+//  - API-first: this DB is served ONLY through /api/v1/*
+//  - appId is carried by every app-facing record (future multi-tenant safe)
+//  - Control plane (this DB) != data plane (app databases, future)
+//  - SDK-style API keys (vx_...) for all programmatic access
+//  - Phase 7 "Firebase Mode" is RESERVED, never deleted
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma" // custom output: forces fresh compile in dev (Turbopack cache-safe)
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// AUTH MODULE — VORTEX ID (owner / admin accounts only)
+// ------------------------------------------------------------
+
+model AdminUser {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String // scrypt: salt:hash (hex)
+  name          String
+  role          String    @default("OWNER") // OWNER | ADMIN
+  emailVerified Boolean   @default(false)
+  status        String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions  Session[]
+  otpCodes  OtpCode[]
+  apiKeys   ApiKey[]
+  auditLogs AuditLog[]
+}
+
+model Session {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique // sha256 of the raw session token
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  email     String
+  codeHash  String // sha256 of the 6-digit code
+  purpose   String // LOGIN | VERIFY_EMAIL
+  attempts  Int      @default(0)
+  consumed  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, purpose])
+}
+
+// ------------------------------------------------------------
+// CORE MODULE — Service Registry + Config
+// ------------------------------------------------------------
+
+model Service {
+  id            String    @id @default(cuid())
+  serviceKey    String    @unique // core | auth | otp | server | ...
+  name          String
+  description   String    @default("")
+  phase         Int       @default(1) // build phase 1..7
+  status        String    @default("PLANNED") // ONLINE | OFFLINE | DEGRADED | BUILDING | PLANNED | RESERVED
+  endpoint      String? // internal URL, e.g. http://core:3000/api/v1
+  version       String?
+  lastHeartbeat DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model AppConfig {
+  id          String   @id @default(cuid())
+  key         String   @unique // e.g. platform.name
+  value       String
+  category    String   @default("general") // platform | security | mail | storage | dev
+  description String   @default("")
+  isSecret    Boolean  @default(false)
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+}
+
+// ------------------------------------------------------------
+// APPLICATIONS — the owner's apps that live inside VORTEX
+// (NEXSEVA, NEXA, FLAREX, App Store, ...)
+// ------------------------------------------------------------
+
+model App {
+  id          String   @id @default(cuid())
+  appId       String   @unique // app_nexseva, app_nexa, ...
+  name        String
+  slug        String   @unique
+  description String   @default("")
+  status      String   @default("ACTIVE") // ACTIVE | PAUSED | ARCHIVED
+  // Phase 8: every app built by the AI builder gets a live VaaS backend
+  vxProjectId  String?   @unique
+  vxProject    VxProject? @relation("AppBackend", fields: [vxProjectId], references: [id], onDelete: SetNull)
+  vxClientKey  String? // publishable CLIENT key of the linked backend (config, not a secret)
+  vaasLinkedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  apiKeys              ApiKey[]
+  servers              ServerNode[]
+  databases            DatabaseInstance[]
+  storageBuckets       StorageBucket[]
+  fileObjects          FileObject[]
+  gatewayRoutes        GatewayRoute[]
+  deployments          Deployment[]
+  pipelines            Pipeline[]
+  notificationChannels NotificationChannel[]
+  cdnDistributions     CdnDistribution[]
+  workloads            Workload[]
+  aiModels             AiModel[]
+  aiJobs               AiJob[]
+  billingSubscriptions BillingSubscription[]
+  usageRecords         UsageRecord[]
+  invoices             Invoice[]
+}
+
+// ------------------------------------------------------------
+// API MODULE — SDK-style keys (groundwork of the API gateway)
+// ------------------------------------------------------------
+
+model ApiKey {
+  id         String     @id @default(cuid())
+  keyId      String     @unique // public id: key_xxxxxxxx
+  keyHash    String     @unique // sha256 of full plaintext key
+  prefix     String // display: vx_live_ab12…
+  name       String
+  scopes     String     @default("read") // comma list: read,write,admin
+  status     String     @default("ACTIVE") // ACTIVE | REVOKED
+  appId      String?
+  app        App?       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  lastUsedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([appId])
+}
+
+// ------------------------------------------------------------
+// COMPLIANCE (slim) — immutable audit trail
+// ------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actor     String // email or "system" or service key
+  action    String // AUTH_LOGIN_OK, OTP_SENT, KEY_CREATED, ...
+  resource  String // what was touched
+  detail    String?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+// ------------------------------------------------------------
+// MAIL MODULE (simulated outbox until real SMTP/Postal lands)
+// ------------------------------------------------------------
+
+model MailLog {
+  id        String   @id @default(cuid())
+  toEmail   String
+  subject   String
+  body      String
+  category  String   @default("otp") // otp | system | alert
+  status    String   @default("SIMULATED") // SIMULATED | SENT | FAILED
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// SERVER MODULE (Phase 2) — node inventory + provisioning
+// ------------------------------------------------------------
+
+model ServerNode {
+  id            String    @id @default(cuid())
+  nodeId        String    @unique // srv_xxxxxxxx
+  name          String    @unique
+  role          String    @default("APP_RUNTIME") // CONTROL_PLANE | APP_RUNTIME | STORAGE | DATABASE | GATEWAY
+  hostType      String    @default("KVM") // KVM | CONTAINER | BARE_METAL
+  status        String    @default("PROVISIONING") // PROVISIONING | RUNNING | STOPPED | DESTROYED | ERROR
+  cpuCores      Int
+  ramMb         Int
+  diskGb        Int
+  ipAddress     String?
+  osImage       String    @default("debian-12")
+  region        String    @default("dhaka-1")
+  appId         String?
+  app           App?      @relation(fields: [appId], references: [id], onDelete: SetNull)
+  uptimeSince   DateTime?
+  provisionedBy String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  storageVolumes StorageVolume[]
+  deployments    Deployment[]
+  workloads      Workload[]
+
+  @@index([appId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// NETWORK MODULE (Phase 2) — zones, IP pool, DNS, firewall
+// ------------------------------------------------------------
+
+model NetZone {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  cidr      String   @unique
+  vlan      Int?
+  purpose   String   @default("")
+  status    String   @default("ACTIVE") // ACTIVE | DISABLED
+  createdAt DateTime @default(now())
+
+  ips IpAddress[]
+}
+
+model IpAddress {
+  id         String   @id @default(cuid())
+  address    String   @unique
+  ipType     String   @default("PRIVATE") // PRIVATE | PUBLIC
+  status     String   @default("FREE") // FREE | ASSIGNED | RESERVED
+  assignedTo String? // nodeId or label
+  note       String   @default("")
+  zoneId     String?
+  zone       NetZone? @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@index([status])
+}
+
+model DnsRecord {
+  id        String   @id @default(cuid())
+  zone      String   @default("vortex.internal")
+  name      String
+  type      String   @default("A") // A | AAAA | CNAME | TXT | MX
+  value     String
+  ttl       Int      @default(300)
+  status    String   @default("ACTIVE") // ACTIVE | DISABLED
+  createdAt DateTime @default(now())
+
+  @@unique([zone, name, type])
+}
+
+model FirewallRule {
+  id        String   @id @default(cuid())
+  name      String
+  direction String   @default("IN") // IN | OUT
+  action    String   @default("ALLOW") // ALLOW | DENY
+  protocol  String   @default("tcp") // tcp | udp | icmp | any
+  port      String? // "443", "3000-3010" or null = any
+  source    String   @default("0.0.0.0/0")
+  priority  Int      @default(100)
+  enabled   Boolean  @default(true)
+  isSystem  Boolean  @default(false) // system rules (default deny) cannot be deleted/disabled
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// DATABASE MODULE (Phase 3) — per-app database provisioning
+// Data gravity rule: every instance is bound to an app.
+// ------------------------------------------------------------
+
+model DatabaseInstance {
+  id            String   @id @default(cuid())
+  dbId          String   @unique // db_xxxxxxxx
+  name          String   @unique
+  engine        String   @default("POSTGRES") // POSTGRES | MYSQL | REDIS | MONGO
+  version       String // engine version, e.g. "16.4"
+  status        String   @default("PROVISIONING") // PROVISIONING | RUNNING | STOPPED | DESTROYED | ERROR
+  sizeMb        Int // provisioned storage
+  host          String // hosting node name (e.g. vortex-db-01)
+  port          Int
+  ipAddress     String?
+  dnsName       String? // name.db.vortex.internal — auto-created in NETWORK DNS
+  username      String // vx_<slug>
+  secretHash    String? // sha256 of the one-time password (never stored in plaintext)
+  secretPrefix  String? // display prefix, e.g. vxdb_ab12…
+  appId         String?
+  app           App?     @relation(fields: [appId], references: [id], onDelete: SetNull)
+  provisionedBy String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([appId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// BACKUP MODULE (Phase 3) — policies + encrypted 3-tier snapshots
+// Tiers mirror the permanent-storage design: disk → cluster → offsite.
+// ------------------------------------------------------------
+
+model BackupPolicy {
+  id             String    @id @default(cuid())
+  policyId       String    @unique // pol_xxxxxxxx
+  name           String
+  targetType     String    @default("DATABASE") // DATABASE | SERVER
+  targetId       String // dbId or nodeId
+  targetLabel    String
+  schedule       String    @default("DAILY") // HOURLY | DAILY | WEEKLY
+  retentionCount Int       @default(7) // keep N latest COMPLETED snapshots
+  encrypted      Boolean   @default(true)
+  enabled        Boolean   @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  runCount       Int       @default(0)
+  createdAt      DateTime  @default(now())
+
+  @@index([targetType, targetId])
+}
+
+model BackupSnapshot {
+  id          String    @id @default(cuid())
+  backupId    String    @unique // bkp_xxxxxxxx
+  policyId    String? // null = manual snapshot
+  trigger     String    @default("MANUAL") // POLICY | MANUAL
+  targetType  String // DATABASE | SERVER
+  targetId    String // dbId or nodeId
+  targetLabel String
+  sizeMb      Int
+  checksum    String // sha256 of the encrypted archive (simulated)
+  cipher      String    @default("age-x25519") // encryption at rest, always on
+  tierDisk    Boolean   @default(true) // tier 1: local disk
+  tierCluster Boolean   @default(false) // tier 2: cluster storage
+  tierOffsite Boolean   @default(false) // tier 3: offsite backup
+  status      String    @default("COMPLETED") // RUNNING | COMPLETED | FAILED | EXPIRED
+  restoredAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// ------------------------------------------------------------
+// MONITOR MODULE (Phase 3) — health checks + alert events
+// Own dashboard, no AGPL Grafana. Checks derive real state from
+// NODE / DATABASE / SERVICE registry + live URL probes.
+// ------------------------------------------------------------
+
+model MonitorTarget {
+  id               String    @id @default(cuid())
+  monitorId        String    @unique // mon_xxxxxxxx
+  name             String
+  targetType       String    @default("URL") // URL | NODE | DATABASE | SERVICE
+  target           String // URL path, node name, dbId or serviceKey
+  intervalSec      Int       @default(60)
+  enabled          Boolean   @default(true)
+  status           String    @default("PENDING") // UP | DOWN | PENDING | PAUSED
+  lastCheckedAt    DateTime?
+  lastLatencyMs    Int?
+  lastStatusCode   Int?
+  lastMessage      String?
+  consecutiveFails Int       @default(0)
+  createdAt        DateTime  @default(now())
+
+  @@index([status])
+}
+
+model MonitorCheck {
+  id         String   @id @default(cuid())
+  targetId   String // MonitorTarget.id
+  status     String // UP | DOWN
+  latencyMs  Int?
+  statusCode Int?
+  message    String?
+  checkedAt  DateTime @default(now())
+
+  @@index([targetId, checkedAt])
+}
+
+model AlertEvent {
+  id        String    @id @default(cuid())
+  targetId  String? // MonitorTarget.id when raised by MONITOR
+  source    String    @default("MONITOR") // MONITOR | BACKUP | SYSTEM | GATEWAY
+  type      String // TARGET_DOWN | TARGET_RECOVERED | BACKUP_FAILED | SYSTEM
+  severity  String    @default("WARNING") // CRITICAL | WARNING | INFO
+  message   String
+  status    String    @default("OPEN") // OPEN | ACK | RESOLVED
+  ackBy     String?
+  ackAt     DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ------------------------------------------------------------
+// STORAGE MODULE (Phase 4) — SeaweedFS-style object storage.
+// Apache-2.0 design, 3 copies per object, app-bound (data gravity).
+// Real bytes are written under .vortex-storage/<volume>/<bucket>/.
+// ------------------------------------------------------------
+
+model StorageVolume {
+  id                String      @id @default(cuid())
+  volumeId          String      @unique // vol_xxxxxxxx
+  name              String      @unique // weed-vol-01 (a SeaweedFS volume server)
+  nodeId            String? // ServerNode.nodeId hosting this volume
+  node              ServerNode? @relation(fields: [nodeId], references: [nodeId], onDelete: SetNull)
+  capacityGb        Int
+  replicationFactor Int         @default(3) // 3 copies per object (locked design)
+  status            String      @default("READ_WRITE") // READ_WRITE | READ_ONLY | OFFLINE
+  region            String      @default("dhaka-1")
+  createdAt         DateTime    @default(now())
+
+  buckets StorageBucket[]
+
+  @@index([status])
+}
+
+model StorageBucket {
+  id                String         @id @default(cuid())
+  bucketId          String         @unique // bkt_xxxxxxxx
+  name              String         @unique // s3-style: lowercase, dashes
+  appId             String?
+  app               App?           @relation(fields: [appId], references: [id], onDelete: SetNull)
+  projectId         String? // Phase 8 VAAS: bucket bound to a public VaaS project
+  project           VxProject?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  volumeId          String?
+  volume            StorageVolume? @relation(fields: [volumeId], references: [id], onDelete: SetNull)
+  storageClass      String         @default("HOT") // HOT | WARM | COLD
+  replicationFactor Int            @default(3)
+  quotaMb           Int            @default(1024)
+  usedMb            Int            @default(0)
+  objectCount       Int            @default(0)
+  status            String         @default("ACTIVE") // ACTIVE | READ_ONLY | DISABLED
+  platformId        String? // owning platform: vortex-server | cloud-agent | vortex-website | appverse | vi
+  purpose           String         @default("") // what this bucket is for (registry note)
+  provider          String         @default("local") // local engine | joy (JOY SERVICES S3)
+  versioning        Boolean        @default(false)
+  versionDays       Int            @default(30)
+  createdBy         String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  files            FileObject[]
+  vxFiles          VxFile[]
+  cdnDistributions CdnDistribution[]
+
+  @@index([appId])
+}
+
+model FileObject {
+  id         String        @id @default(cuid())
+  fileId     String        @unique // fil_xxxxxxxx
+  bucketId   String
+  bucket     StorageBucket @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  appId      String?
+  app        App?          @relation(fields: [appId], references: [id], onDelete: SetNull)
+  path       String // object key inside the bucket, e.g. media/feed.json
+  name       String
+  mime       String        @default("application/octet-stream")
+  sizeBytes  Int
+  checksum   String // sha256 of the exact bytes on disk
+  version    Int           @default(1) // bumps on every overwrite
+  status     String        @default("ACTIVE") // ACTIVE | ARCHIVED | DELETED
+  uploadedBy String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([bucketId, path])
+  @@index([bucketId, status])
+  @@index([appId])
+}
+
+// ------------------------------------------------------------
+// API GATEWAY MODULE (Phase 4) — one door for every app call.
+// Public edge: /api/gw/<route>/... — key auth, scopes, rate
+// limits, full access log. Phase 1 keys become real here.
+// ------------------------------------------------------------
+
+model GatewayRoute {
+  id              String    @id @default(cuid())
+  routeId         String    @unique // gw_xxxxxxxx
+  name            String
+  publicPath      String    @unique // first path segment: /api/gw/<publicPath>/...
+  targetType      String    @default("APP") // APP | SERVICE | MOCK
+  target          String // appId, serviceKey, or "echo"
+  auth            String    @default("API_KEY") // API_KEY | PUBLIC
+  requiredScope   String    @default("read") // read | write | admin (API_KEY only)
+  rateLimitPerMin Int       @default(120)
+  appId           String?
+  app             App?      @relation(fields: [appId], references: [id], onDelete: SetNull)
+  status          String    @default("ACTIVE") // ACTIVE | DISABLED
+  hitCount        Int       @default(0)
+  lastHitAt       DateTime?
+  createdBy       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status])
+}
+
+model GatewayRequest {
+  id        String   @id @default(cuid())
+  routeId   String? // null when no route matched
+  routeKey  String // path segment that was hit
+  method    String   @default("GET")
+  status    Int // HTTP status returned by the gateway
+  latencyMs Int
+  keyPrefix String? // vx_live_ab12… (never the full key)
+  appId     String?
+  sourceIp  String   @default("local")
+  via       String   @default("EDGE") // EDGE | SIMULATOR
+  blocked   String? // rejection reason when status >= 400
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([routeId])
+}
+
+// ------------------------------------------------------------
+// SECURITY MODULE (Phase 5) — central threat detection.
+// Sits in front of the gateway edge: IP blocklist → WAF rules
+// → rate-limit abuse auto-block (DDoS). Events are always logged.
+// ------------------------------------------------------------
+
+model SecurityPolicy {
+  id             String   @id @default(cuid())
+  singleton      String   @unique @default("global") // one row only
+  wafEnabled     Boolean  @default(true)
+  ipBlockEnabled Boolean  @default(true)
+  ddosEnabled    Boolean  @default(true) // auto-block IPs that hammer the edge
+  ddosThreshold  Int      @default(30) // 429 responses within 5 min before auto-block
+  blockMode      String   @default("BLOCK") // BLOCK | LOG_ONLY (observe mode)
+  updatedBy      String?
+  updatedAt      DateTime @updatedAt
+}
+
+model WafRule {
+  id         String   @id @default(cuid())
+  ruleId     String   @unique // waf_xxxxxxxx
+  name       String
+  pattern    String // case-insensitive regex, e.g. union\s+select
+  matchIn    String   @default("QUERY") // PATH | QUERY | BODY | USER_AGENT | HEADER
+  headerName String? // when matchIn = HEADER
+  action     String   @default("BLOCK") // BLOCK | LOG
+  severity   String   @default("WARNING") // CRITICAL | WARNING | INFO
+  isSystem   Boolean  @default(false) // seeded baseline rules can only be toggled
+  enabled    Boolean  @default(true)
+  hitCount   Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([enabled])
+}
+
+model IpBlock {
+  id        String    @id @default(cuid())
+  ip        String    @unique
+  reason    String
+  source    String    @default("MANUAL") // MANUAL | AUTO_WAF | AUTO_RATE
+  expiresAt DateTime? // null = permanent
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([expiresAt])
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  type      String // WAF_BLOCK | IP_BLOCKED | IP_UNBLOCKED | RATE_ABUSE | AUTO_BLOCK | POLICY_UPDATED | RULE_ADDED | RULE_REMOVED | SCAN_DETECTED
+  severity  String   @default("WARNING") // CRITICAL | WARNING | INFO
+  sourceIp  String?
+  appId     String? // App.id when the hit relates to an app route
+  routeKey  String? // gateway route path when relevant
+  action    String // what SECURITY did: blocked | logged | auto-blocked | …
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+// ------------------------------------------------------------
+// DEPLOY MODULE (Phase 5) — app delivery pipeline.
+// NEXA (AI builder) / GIT / MANUAL builds ship onto APP_RUNTIME
+// nodes. Every deployment is app-bound (data gravity) and gets a
+// MONITOR health target on success. Rollback re-ships the
+// previous version as a new deployment (history is never lost).
+// ------------------------------------------------------------
+
+model Deployment {
+  id           String      @id @default(cuid())
+  deployId     String      @unique // dep_xxxxxxxx
+  appId        String
+  app          App         @relation(fields: [appId], references: [id], onDelete: Cascade)
+  version      String // e.g. "1.4.0"
+  buildNumber  Int         @default(1) // per-app increment
+  source       String      @default("NEXA_BUILDER") // NEXA_BUILDER | GIT | MANUAL
+  gitSha       String?
+  status       String      @default("QUEUED") // QUEUED | BUILDING | DEPLOYING | RUNNING | FAILED | ROLLED_BACK | STOPPED
+  health       String      @default("PENDING") // PENDING | HEALTHY | UNHEALTHY
+  nodeId       String? // ServerNode.nodeId hosting the running app
+  node         ServerNode? @relation(fields: [nodeId], references: [nodeId], onDelete: SetNull)
+  url          String? // <slug>.apps.vortex.internal
+  artifactKb   Int? // build artifact size
+  artifactPath String? // where the artifact lives in STORAGE (nexa-artifacts)
+  log          String? // build + ship log (append-style)
+  rollbackOf   String? // deployId this rollback replaced
+  deployedBy   String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([appId, createdAt])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// DEVOPS MODULE (Phase 5) — CI/CD pipelines + SSL.
+// Pipeline = Gitea repo + stages (build,test,deploy); a run that
+// reaches the deploy stage ships a real Deployment. SSL certs are
+// issued by the internal CA with auto-renew tracking.
+// ------------------------------------------------------------
+
+model Pipeline {
+  id           String    @id @default(cuid())
+  pipelineId   String    @unique // pip_xxxxxxxx
+  appId        String
+  app          App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  name         String
+  repo         String // gitea.vortex.internal/<owner>/<repo>
+  branch       String    @default("main")
+  trigger      String    @default("PUSH") // PUSH | MANUAL | WEBHOOK
+  stages       String    @default("build,test,deploy") // comma list
+  enabled      Boolean   @default(true)
+  runCount     Int       @default(0)
+  successCount Int       @default(0)
+  failCount    Int       @default(0)
+  lastRunAt    DateTime?
+  lastStatus   String? // SUCCESS | FAILED | RUNNING
+  createdAt    DateTime  @default(now())
+
+  runs PipelineRun[]
+
+  @@index([appId])
+}
+
+model PipelineRun {
+  id            String    @id @default(cuid())
+  runId         String    @unique // run_xxxxxxxx
+  pipelineId    String
+  pipeline      Pipeline  @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  commitSha     String
+  commitMessage String    @default("")
+  trigger       String    @default("MANUAL") // PUSH | MANUAL | WEBHOOK
+  status        String    @default("QUEUED") // QUEUED | RUNNING | SUCCESS | FAILED
+  stagesLog     String    @default("[]") // JSON: [{stage,status,ms,log}]
+  durationMs    Int?
+  deployId      String? // Deployment created by the deploy stage
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([pipelineId, createdAt])
+}
+
+model SslCert {
+  id          String   @id @default(cuid())
+  certId      String   @unique // ssl_xxxxxxxx
+  domain      String   @unique
+  issuer      String   @default("VORTEX_INTERNAL_CA") // VORTEX_INTERNAL_CA | LETS_ENCRYPT
+  status      String   @default("ACTIVE") // ACTIVE | EXPIRING | EXPIRED | REVOKED
+  autoRenew   Boolean  @default(true)
+  issuedAt    DateTime
+  expiresAt   DateTime
+  targetLabel String   @default("") // what this cert protects
+  createdAt   DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// MAIL MODULE (Phase 6) — full outbound center.
+// The provider stays "simulated" in this sandbox, but the surface
+// (templates, outbox, retries, per-provider config) is the real
+// production shape — SMTP/Postal plugs in without model changes.
+// ------------------------------------------------------------
+
+model MailTemplate {
+  id        String   @id @default(cuid())
+  key       String   @unique // otp_login | alert_open | deploy_failed | ...
+  name      String
+  subject   String
+  body      String // supports {{placeholders}}
+  category  String   @default("system") // otp | alert | deploy | system
+  enabled   Boolean  @default(true)
+  isSystem  Boolean  @default(false) // seeded templates can be edited, not deleted
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------------------------------
+// NOTIFY MODULE (Phase 6) — notification fan-out.
+// Event rules route platform events to channels: in-app feed,
+// the mail outbox, or app webhooks. Everything app-bound.
+// ------------------------------------------------------------
+
+model NotificationChannel {
+  id        String   @id @default(cuid())
+  channelId String   @unique // chn_xxxxxxxx
+  name      String
+  type      String   @default("INAPP") // INAPP | EMAIL | WEBHOOK
+  target    String   @default("") // email address or webhook URL
+  appId     String?
+  app       App?     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(true)
+  isSystem  Boolean  @default(false) // owner baseline channels cannot be deleted
+  createdAt DateTime @default(now())
+
+  rules NotificationRule[]
+
+  @@index([appId])
+}
+
+model NotificationRule {
+  id          String              @id @default(cuid())
+  ruleId      String              @unique // nrl_xxxxxxxx
+  name        String
+  eventType   String              @default("ALERT_OPEN") // ALERT_OPEN | DEPLOY_FAILED | BACKUP_FAILED | SECURITY_BLOCK | AI_JOB_FAILED
+  minSeverity String              @default("INFO") // fires when severity rank >= this
+  channelId   String
+  channel     NotificationChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  enabled     Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+
+  @@index([eventType])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  title       String
+  body        String
+  source      String    @default("SYSTEM") // MONITOR | DEPLOY | BACKUP | SECURITY | MAIL | COMPUTE | AI | SYSTEM
+  severity    String    @default("INFO") // INFO | WARNING | CRITICAL
+  channelType String    @default("INAPP") // delivery path that produced this row
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([createdAt])
+}
+
+// ------------------------------------------------------------
+// CDN MODULE (Phase 6) — edge cache in front of STORAGE.
+// Cloudflare-free-tier design: each distribution maps one bucket
+// to an edge domain with TTL rules, purge and hit accounting.
+// ------------------------------------------------------------
+
+model CdnDistribution {
+  id            String        @id @default(cuid())
+  distId        String        @unique // cdn_xxxxxxxx
+  name          String
+  domain        String        @unique // <name>.cdn.vortex.internal or custom
+  bucketId      String
+  bucket        StorageBucket @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  appId         String?
+  app           App?          @relation(fields: [appId], references: [id], onDelete: SetNull)
+  defaultTtlSec Int           @default(300)
+  maxTtlSec     Int           @default(86400)
+  compress      Boolean       @default(true)
+  edgeRegion    String        @default("dhaka-1") // edge PoP serving this distribution
+  status        String        @default("ACTIVE") // ACTIVE | PAUSED
+  cacheHits     Int           @default(0)
+  cacheMisses   Int           @default(0)
+  bandwidthMb   Int           @default(0)
+  purgedAt      DateTime?
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([appId])
+}
+
+// ------------------------------------------------------------
+// COMPUTE MODULE (Phase 6) — runtime workloads for apps.
+// DEPLOY ships builds; COMPUTE owns the long-running runtime
+// containers/functions that execute them, scheduled onto
+// APP_RUNTIME nodes with CPU/RAM guarantees.
+// ------------------------------------------------------------
+
+model Workload {
+  id            String      @id @default(cuid())
+  workloadId    String      @unique // wrk_xxxxxxxx
+  name          String      @unique
+  image         String // e.g. vortex/nexa-runtime:1.4
+  kind          String      @default("CONTAINER") // CONTAINER | FUNCTION | CRON
+  appId         String?
+  app           App?        @relation(fields: [appId], references: [id], onDelete: Cascade)
+  nodeId        String? // ServerNode.nodeId the workload is scheduled on
+  node          ServerNode? @relation(fields: [nodeId], references: [nodeId], onDelete: SetNull)
+  cpuMilli      Int         @default(500) // CPU guarantee in millicores
+  ramMb         Int         @default(512)
+  status        String      @default("PROVISIONING") // PROVISIONING | RUNNING | STOPPED | CRASHED | DESTROYED
+  restartPolicy String      @default("ALWAYS") // ALWAYS | ON_FAIL | NEVER
+  restartCount  Int         @default(0)
+  startedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([appId])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// AI INFRASTRUCTURE MODULE (Phase 6) — model serving for NEXA.
+// Proprietary model registry + inference jobs. Every job is
+// app-bound; token usage feeds future BILLING (Phase 7 reserve).
+// ------------------------------------------------------------
+
+model AiModel {
+  id           String   @id @default(cuid())
+  modelId      String   @unique // aim_xxxxxxxx
+  name         String   @unique // vortex-nano, vortex-mini, vortex-pro
+  family       String   @default("VORTEX") // VORTEX | OPEN_COMPAT
+  paramsB      String   @default("1.5B") // parameter size, display only
+  contextK     Int      @default(32) // context window in K tokens
+  quant        String   @default("q4_KM") // quantization on the serving node
+  status       String   @default("READY") // READY | LOADING | OFFLINE
+  endpoint     String? // internal serving endpoint
+  appId        String? // serving owner (NEXA builder)
+  app          App?     @relation(fields: [appId], references: [id], onDelete: SetNull)
+  requests     Int      @default(0)
+  tokensIn     Int      @default(0)
+  tokensOut    Int      @default(0)
+  avgLatencyMs Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  jobs AiJob[]
+
+  @@index([appId])
+}
+
+model AiJob {
+  id         String    @id @default(cuid())
+  jobId      String    @unique // job_xxxxxxxx
+  modelId    String
+  model      AiModel   @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  appId      String?
+  app        App?      @relation(fields: [appId], references: [id], onDelete: SetNull)
+  prompt     String // truncated prompt for the feed
+  status     String    @default("QUEUED") // QUEUED | RUNNING | DONE | FAILED
+  tokensIn   Int       @default(0)
+  tokensOut  Int       @default(0)
+  latencyMs  Int?
+  output     String?
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([modelId, createdAt])
+  @@index([appId])
+}
+
+// ------------------------------------------------------------
+// BILLING MODULE (Phase 7) — showback metering for the owner's
+// own apps. VORTEX stays PRIVATE: no external customers, no public
+// charges. Every app's real consumption (gateway calls, storage,
+// compute, AI tokens, databases, CDN bandwidth) is metered and
+// priced so the owner sees exactly what each app costs to run.
+// EXTERNAL audience plans exist only as the locked Firebase Mode
+// reserve — they cannot be activated while firebase_mode = LOCKED.
+// ------------------------------------------------------------
+
+model BillingPlan {
+  id               String   @id @default(cuid())
+  planId           String   @unique // plan_xxxxxxxx
+  code             String   @unique // INTERNAL_SHOWBACK | TEAM_STANDARD | EXTERNAL_...
+  name             String
+  audience         String   @default("INTERNAL") // INTERNAL | EXTERNAL_RESERVED
+  monthlyBaseBdt   Int      @default(0) // fixed base, BDT (0 = pure showback)
+  currency         String   @default("BDT")
+  // free allowances inside the plan (over the allowance → rate card applies)
+  inclApiCalls     Int      @default(2000000)
+  inclStorageMb    Int      @default(51200) // 50 GB-month
+  inclComputeHours Int      @default(744) // full month of one core
+  inclAiTokens     Int      @default(5000000)
+  inclDbMb         Int      @default(102400) // 100 GB
+  inclCdnMb        Int      @default(102400) // 100 GB
+  isActive         Boolean  @default(true)
+  isDefault        Boolean  @default(false)
+  isSystem         Boolean  @default(false) // seeded plans editable in price, not deletable
+  note             String   @default("")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  subscriptions BillingSubscription[]
+
+  @@index([audience])
+}
+
+model BillingSubscription {
+  id               String      @id @default(cuid())
+  subId            String      @unique // sub_xxxxxxxx
+  appId            String
+  app              App         @relation(fields: [appId], references: [id], onDelete: Cascade)
+  planId           String
+  plan             BillingPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  status           String      @default("ACTIVE") // ACTIVE | PAUSED | ENDED
+  budgetMonthlyBdt Int? // showback budget — warning threshold, not a hard cap
+  periodStart      DateTime    @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([appId, status])
+  @@index([planId])
+}
+
+model UsageRecord {
+  id        String   @id @default(cuid())
+  appId     String
+  app       App      @relation(fields: [appId], references: [id], onDelete: Cascade)
+  metric    String // API_CALLS | STORAGE_MB | COMPUTE_HOURS | AI_TOKENS | DB_SIZE_MB | CDN_BANDWIDTH_MB
+  quantity  Int // measured quantity in the metric's natural unit
+  period    String // "2026-11" month bucket
+  source    String   @default("METER") // METER (platform aggregation) | MANUAL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([appId, metric, period])
+  @@index([period])
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  invoiceId   String    @unique // inv_xxxxxxxx
+  number      String    @unique // VX-2026-11-0001
+  appId       String
+  app         App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  period      String // "2026-11"
+  mode        String    @default("SHOWBACK") // SHOWBACK only while firebase_mode = LOCKED
+  status      String    @default("DRAFT") // DRAFT | ISSUED | PAID | VOID
+  currency    String    @default("BDT")
+  subtotalBdt Int       @default(0)
+  taxBdt      Int       @default(0) // VAT 15% (Bangladesh) on chargeable base
+  totalBdt    Int       @default(0)
+  lines       String    @default("[]") // JSON line items [{metric,label,quantity,unit,included,billable,rateBdt,per,costBdt}]
+  issuedAt    DateTime?
+  paidAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([appId, period, mode])
+  @@index([status])
+}
+
+// ------------------------------------------------------------
+// PORTAL MODULE (Phase 7) — internal developer portal + docs
+// engine. Guides are the owner's own API documentation, rendered
+// from the real /api/v1 surface. A guide can only become PUBLIC
+// when firebase_mode leaves LOCKED — which is the owner's locked
+// decision, so the gate is enforced on the server, not the UI.
+// ------------------------------------------------------------
+
+model DocPage {
+  id         String   @id @default(cuid())
+  docId      String   @unique // doc_xxxxxxxx
+  slug       String   @unique // quickstart, auth, gateway, billing, ...
+  title      String
+  category   String   @default("GUIDES") // GET_STARTED | API_REFERENCE | GUIDES | POLICY
+  body       String // markdown
+  order      Int      @default(100)
+  visibility String   @default("INTERNAL") // INTERNAL | PUBLIC (public needs the gate)
+  isSystem   Boolean  @default(false) // seeded docs editable, not deletable
+  updatedBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([category, order])
+}
+
+// ------------------------------------------------------------
+// VAAS (Phase 8) — VORTEX AS A SERVICE — the public face.
+// The owner's decision recorded here: `future.firebase_mode` flips
+// from LOCKED to OPEN and VORTEX becomes a multi-tenant Backend-
+// as-a-Service for everyone, wired into the NEXA AI app builder.
+// Every Firebase capability has a VORTEX counterpart, backed by the
+// real Phase 1-7 machinery (STORAGE, MAIL, OTP, SECURITY, BILLING):
+//   Firebase Auth        -> VxUser + VxOtp + VxSession
+//   Firestore            -> VxCollection + VxDocument (rules enforced server-side)
+//   Cloud Storage        -> StorageBucket/VxFile (real bytes, 3x replicas)
+//   Realtime DB/streams  -> VxRealtimeEvent + socket.io broadcast
+//   Cloud Functions      -> VxFunction + VxFunctionRun (HTTP/EVENT/CRON triggers)
+//   Projects + API keys  -> VxProject + VxKey (CLIENT config key / ADMIN secret)
+//   Console accounts     -> Developer (public signup)
+// ------------------------------------------------------------
+
+model Developer {
+  id              String    @id @default(cuid())
+  devId           String    @unique // dev_xxxxxxxx
+  email           String    @unique
+  passwordHash    String // scrypt
+  name            String
+  status          String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  emailVerified   Boolean   @default(false)
+  verifyTokenHash String? // email verification token (sha256)
+  plan            String    @default("VAAS_FREE")
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  projects VxProject[]
+  sessions VxDevSession[]
+  otpCodes VxOtp[]
+
+  @@index([status])
+}
+
+model VxProject {
+  id          String    @id @default(cuid())
+  projectId   String    @unique // vxproj_xxxxxxxx
+  name        String
+  slug        String    @unique // <slug>.vaas.vortex.internal
+  developerId String
+  developer   Developer @relation(fields: [developerId], references: [id], onDelete: Cascade)
+  region      String    @default("dhaka-1")
+  status      String    @default("ACTIVE") // ACTIVE | PAUSED | ARCHIVED
+  authEnabled Boolean   @default(true)
+  rtEnabled   Boolean   @default(true)
+  fnEnabled   Boolean   @default(true)
+  viaNexa     Boolean   @default(false) // provisioned by the NEXA AI app builder
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  keys        VxKey[]
+  users       VxUser[]
+  collections VxCollection[]
+  buckets     StorageBucket[]
+  functions   VxFunction[]
+  events      VxRealtimeEvent[]
+  usage       VxUsage[]
+  userOtps    VxOtp[]           @relation("VxOtpProject")
+  files       VxFile[]          @relation("VxFileProject")
+  docFiles    VxDocument[]      @relation("VxDocProject")
+  remoteCfg   VxRemoteConfig[]
+  pushTokens  VxPushToken[]
+  analytics   VxAnalyticsEvent[]
+  crashes     VxCrashReport[]
+  backendFor  App?              @relation("AppBackend")
+
+  @@index([developerId])
+}
+
+model VxKey {
+  id         String    @id @default(cuid())
+  keyId      String    @unique // vxk_xxxxxxxx
+  kind       String    @default("CLIENT") // CLIENT (publishable, like firebase apiKey) | ADMIN (secret, hashed)
+  secretHash String    @unique // sha256 of the full secret (ADMIN: vxa_…); CLIENT keys are public config
+  prefix     String // display: vxk_ab12… / vxa_ab12…
+  projectId  String
+  project    VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status     String    @default("ACTIVE") // ACTIVE | REVOKED
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+model VxUser {
+  id            String    @id @default(cuid())
+  uid           String    @unique // vxu_xxxxxxxx
+  projectId     String
+  project       VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  email         String
+  passwordHash  String? // null when the user only signs in with OTP
+  displayName   String    @default("")
+  photoUrl      String    @default("")
+  provider      String    @default("PASSWORD") // PASSWORD | OTP
+  emailVerified Boolean   @default(false)
+  phone         String?
+  claimsJson    String    @default("{}") // custom claims (role: "admin", …)
+  status        String    @default("ACTIVE") // ACTIVE | DISABLED
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions VxSession[]
+
+  @@unique([projectId, email])
+  @@index([projectId])
+}
+
+model VxSession {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // sha256 of the raw idToken
+  projectId String
+  userId    String
+  user      VxUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model VxDevSession {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  devId     String
+  dev       Developer @relation(fields: [devId], references: [id], onDelete: Cascade)
+  ip        String?
+  userAgent String?
+  expiresAt DateTime
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+
+  @@index([devId])
+}
+
+// Shared OTP pool: developer console login AND project end-user OTP sign-in.
+model VxOtp {
+  id        String     @id @default(cuid())
+  email     String
+  codeHash  String // sha256 of the 6-digit code
+  purpose   String     @default("LOGIN") // LOGIN | VERIFY_EMAIL (dev console) | USER_LOGIN (project end-user)
+  projectId String? // set when the OTP belongs to a project end-user flow
+  project   VxProject? @relation("VxOtpProject", fields: [projectId], references: [id], onDelete: Cascade)
+  attempts  Int        @default(0)
+  consumed  Boolean    @default(false)
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  dev   Developer? @relation(fields: [devId], references: [id], onDelete: SetNull)
+  devId String?
+
+  @@index([email, purpose])
+}
+
+model VxCollection {
+  id        String    @id @default(cuid())
+  projectId String
+  project   VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name      String
+  docCount  Int       @default(0)
+  sizeBytes Int       @default(0)
+  readRule  String    @default("public") // public | auth | owner | admin
+  writeRule String    @default("auth") // public | auth | owner | admin
+  status    String    @default("ACTIVE") // ACTIVE | DISABLED
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  documents VxDocument[]
+
+  @@unique([projectId, name])
+}
+
+model VxDocument {
+  id           String       @id @default(cuid())
+  docId        String       @unique // vxd_xxxxxxxx
+  collectionId String
+  collection   VxCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      VxProject    @relation("VxDocProject", fields: [projectId], references: [id], onDelete: Cascade)
+  ownerUid     String? // end-user who created it (drives "owner" rules)
+  dataJson     String // JSON payload — schema-less like Firestore
+  version      Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([collectionId, updatedAt])
+  @@index([projectId])
+}
+
+model VxFile {
+  id        String        @id @default(cuid())
+  fileId    String        @unique // vxfile_xxxxxxxx
+  projectId String
+  project   VxProject     @relation("VxFileProject", fields: [projectId], references: [id], onDelete: Cascade)
+  bucketId  String // real STORAGE bucket — the actual bytes live there
+  bucket    StorageBucket @relation(fields: [bucketId], references: [id], onDelete: Cascade)
+  path      String // object key inside the project bucket
+  mime      String        @default("application/octet-stream")
+  sizeBytes Int
+  checksum  String // sha256 of the exact bytes on disk
+  ownerUid  String?
+  isPublic  Boolean       @default(true) // public download URL gate
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([bucketId, path])
+  @@index([projectId])
+}
+
+model VxRealtimeEvent {
+  id          String    @id @default(cuid())
+  eventId     String    @unique // rte_xxxxxxxx
+  projectId   String
+  project     VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  channel     String // e.g. "chat-room-1"
+  type        String // message | presence | doc-change | fn-log | custom
+  payloadJson String    @default("{}")
+  emittedBy   String    @default("sdk") // sdk | fn | system
+  createdAt   DateTime  @default(now())
+
+  @@index([projectId, channel, createdAt])
+}
+
+model VxFunction {
+  id          String    @id @default(cuid())
+  fnId        String    @unique // vxfn_xxxxxxxx
+  projectId   String
+  project     VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  trigger     String    @default("HTTP") // HTTP | EVENT_DOC | EVENT_AUTH | SCHEDULE
+  eventConfig String    @default("{}") // {"collection":"posts","op":"create"} | {"cron":"*/5 * * * *"}
+  code        String // JS body: async (ctx) => { … } — sandboxed, timeout-enforced
+  status      String    @default("ACTIVE") // ACTIVE | DISABLED | ERROR
+  invocations Int       @default(0)
+  fails       Int       @default(0)
+  lastRunAt   DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  runs VxFunctionRun[]
+
+  @@unique([projectId, name])
+}
+
+model VxFunctionRun {
+  id         String     @id @default(cuid())
+  runId      String     @unique // fxr_xxxxxxxx
+  fnId       String
+  fn         VxFunction @relation(fields: [fnId], references: [id], onDelete: Cascade)
+  trigger    String     @default("HTTP") // HTTP | EVENT | SCHEDULE
+  status     String // OK | ERROR | TIMEOUT
+  latencyMs  Int
+  inputJson  String     @default("{}")
+  outputJson String?
+  error      String?
+  createdAt  DateTime   @default(now())
+
+  @@index([fnId, createdAt])
+}
+
+model VxUsage {
+  id        String    @id @default(cuid())
+  projectId String
+  project   VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  metric    String // VAAS_API | VAAS_AUTH | VAAS_DOCS | VAAS_STORAGE_MB | VAAS_REALTIME | VAAS_FN
+  quantity  Int
+  period    String // "2026-11"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([projectId, metric, period])
+}
+
+// ============================================================
+// VORTEX SERVER — Central Cloud Infrastructure (5-platform tenancy)
+// Platforms: vortex-server | cloud-agent | vortex-website | appverse | vi
+// Isolation keys: platform_id + user_id + project_id on every tenant row.
+// ============================================================
+
+model Platform {
+  id          String        @id @default(cuid())
+  platformId  String        @unique // vortex-server | cloud-agent | vortex-website | appverse | vi
+  name        String
+  kind        String // infra | builder | hosting | distribution | ai
+  namespace   String // /api/v1/cloud-agent etc
+  description String        @default("")
+  status      String        @default("ACTIVE") // ACTIVE | SUSPENDED
+  sortOrder   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  keys PlatformKey[]
+
+  @@index([status])
+}
+
+model PlatformKey {
+  id         String    @id @default(cuid())
+  keyId      String    @unique // pk_live_xxxxxxxx — visible prefix for identification
+  keyHash    String    @unique // sha256(full key) — the raw secret is never stored
+  platformDb String?
+  platform   Platform? @relation(fields: [platformDb], references: [platformId], onDelete: Cascade)
+  name       String
+  kind       String    @default("platform") // master | platform
+  scopes     String    @default("") // csv: projects.read,projects.write,storage,deploy,...
+  status     String    @default("ACTIVE") // ACTIVE | REVOKED
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([platformDb])
+}
+
+// CLOUD AGENT — AI app builder project lifecycle
+model CaProject {
+  id          String    @id @default(cuid())
+  projectId   String    @unique // ca_xxxxxxxx
+  ownerUserId String?
+  ownerEmail  String    @default("")
+  name        String
+  type        String    @default("web") // android|ios|web|desktop|flutter|react|java|kotlin|swift|dart|csharp|cpp|go|rust|php|html
+  language    String    @default("")
+  status      String    @default("DRAFT") // DRAFT|READY|BUILDING|FAILED
+  bucket      String    @default("cloud-agent-projects")
+  prefix      String // platform:ownerEmail:projectId source prefix
+  sizeBytes   Int       @default(0)
+  fileCount   Int       @default(0)
+  buildCount  Int       @default(0)
+  lastBuildAt DateTime?
+  metaJson    String    @default("{}")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  builds CaBuild[]
+
+  @@index([ownerEmail])
+}
+
+model CaBuild {
+  id             String    @id @default(cuid())
+  buildId        String    @unique // ca_bld_xxxxxxxx
+  projectId      String
+  project        CaProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status         String    @default("QUEUED") // QUEUED|RUNNING|SUCCESS|FAILED
+  trigger        String    @default("manual")
+  artifactBucket String?
+  artifactKey    String?
+  sizeBytes      Int       @default(0)
+  checksum       String?
+  log            String    @default("")
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([projectId])
+}
+
+// VORTEX WEBSITE — website hosting workflow
+model WebsiteProject {
+  id            String   @id @default(cuid())
+  siteId        String   @unique // ws_xxxxxxxx
+  ownerUserId   String?
+  ownerEmail    String   @default("")
+  name          String
+  subdomain     String   @unique // sitename.vortex.site
+  customDomain  String?  @unique
+  status        String   @default("DRAFT") // DRAFT|DEPLOYED|SUSPENDED
+  bucket        String   @default("vortex-websites")
+  prefix        String
+  sizeBytes     Int      @default(0)
+  fileCount     Int      @default(0)
+  activeVersion Int      @default(0)
+  deployCount   Int      @default(0)
+  lastDeployAt  DateTime?
+  metaJson      String   @default("{}")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  deployments WebsiteDeployment[]
+
+  @@index([ownerEmail])
+}
+
+model WebsiteDeployment {
+  id           String         @id @default(cuid())
+  depId        String         @unique // ws_dep_xxxxxxxx
+  siteId       String
+  site         WebsiteProject @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  version      Int
+  status       String         @default("QUEUED") // QUEUED|SUCCESS|FAILED
+  filesCount   Int            @default(0)
+  sizeBytes    Int            @default(0)
+  manifestJson String         @default("[]")
+  log          String         @default("")
+  deployedAt   DateTime?
+  createdAt    DateTime       @default(now())
+
+  @@index([siteId])
+}
+
+// APPVERSE — app publishing and distribution
+model AppverseApp {
+  id            String            @id @default(cuid())
+  appId         String            @unique // av_xxxxxxxx
+  developerId   String?
+  name          String
+  packageName   String            @unique
+  category      String            @default("general")
+  description   String            @default("")
+  status        String            @default("DRAFT") // DRAFT|PENDING_REVIEW|PUBLISHED|REJECTED|SUSPENDED
+  iconKey       String?
+  latestVersion String?
+  downloadCount Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  versions AppverseVersion[]
+
+  @@index([developerId])
+}
+
+model AppverseVersion {
+  id          String      @id @default(cuid())
+  versionId   String      @unique // avv_xxxxxxxx
+  appId       String
+  app         AppverseApp @relation(fields: [appId], references: [id], onDelete: Cascade)
+  version     String // semver
+  kind        String      @default("APK") // APK | AAB
+  bucket      String      @default("appverse-apk")
+  objectKey   String
+  sizeBytes   Int         @default(0)
+  sha256      String
+  status      String      @default("PENDING") // PENDING|APPROVED|REJECTED
+  changelog   String      @default("")
+  downloads   Int         @default(0)
+  publishedAt DateTime?
+  createdAt   DateTime    @default(now())
+
+  @@index([appId])
+}
+
+// VI — central AI agent coordination (approval-gated)
+model ViTask {
+  id               String    @id @default(cuid())
+  taskId           String    @unique // vi_xxxxxxxx
+  kind             String    @default("assist") // assist|monitor|deploy|publish|coordinate
+  title            String
+  actor            String    @default("")
+  status           String    @default("QUEUED") // QUEUED|RUNNING|DONE|FAILED|NEEDS_APPROVAL
+  payloadJson      String    @default("{}")
+  resultJson       String?
+  approvalRequired Boolean   @default(false)
+  approvedBy       String?
+  platformRef      String?
+  latencyMs        Int?
+  createdAt        DateTime  @default(now())
+  finishedAt       DateTime?
+
+  @@index([status])
+}
+
+// Signed URL issuance audit — the URLs themselves are stateless HMAC tokens
+model SignedAccess {
+  id          String   @id @default(cuid())
+  tokenId     String   @unique // sat_xxxxxxxx
+  kind        String // upload | download
+  bucket      String
+  objectKey   String
+  platformRef String   @default("")
+  subjectRef  String   @default("")
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([bucket])
+}
+
+// ----------------------------------------------------------------
+// VaaS growth layer — beyond-Firebase products (v145 additions)
+// ----------------------------------------------------------------
+
+// Remote Config — per-project key/value with conditions (Firebase Remote Config counterpart)
+model VxRemoteConfig {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  key         String    // e.g. "theme_color", "maintenance"
+  value       String    @default("")
+  valueType   String    @default("string") // string | number | boolean | json
+  description String    @default("")
+  version     Int       @default(1) // bumped on every change — clients can poll ?since=
+  updatedBy   String    @default("admin")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([projectId, key])
+  @@index([projectId, updatedAt])
+}
+
+// Push tokens — device registry for VORTEX Push (FCM counterpart, no external creds needed)
+model VxPushToken {
+  id          String    @id @default(cuid())
+  tokenId     String    @unique // vxpt_xxxxxxxx
+  projectId   String
+  project     VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  token       String    // client-generated device token (or uid-scoped)
+  uid         String?   // bound end-user (when registered with an idToken)
+  platform    String    @default("web") // web | android | ios
+  channels    String    @default("[]") // JSON array of channels this device listens to
+  lastSeenAt  DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  @@unique([projectId, token])
+  @@index([projectId, uid])
+}
+
+// Analytics — event log + day aggregates (Firebase Analytics counterpart)
+model VxAnalyticsEvent {
+  id         String    @id @default(cuid())
+  projectId  String
+  project    VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name       String    // screen_view | purchase | custom…
+  uid        String? // end-user when signed in
+  paramsJson String    @default("{}")
+  day        String    // "2026-11-14" — for fast aggregates
+  createdAt  DateTime  @default(now())
+
+  @@index([projectId, name, day])
+  @@index([projectId, day])
+}
+
+// Crashlytics — crash reports (Firebase Crashlytics counterpart)
+model VxCrashReport {
+  id         String    @id @default(cuid())
+  crashId    String    @unique // vxcr_xxxxxxxx
+  projectId  String
+  project    VxProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uid        String?
+  message    String
+  stack      String    @default("")
+  appVersion String    @default("")
+  platform   String    @default("web")
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+
+  @@index([projectId, resolved, createdAt])
+}

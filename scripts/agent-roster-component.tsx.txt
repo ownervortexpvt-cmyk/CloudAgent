@@ -1,0 +1,155 @@
+/** 🧩 Agent roster — the added AI agents, shown right under the Quick form.
+ *  Tabs: All Agent | Active agent (live balancer status).
+ *  👑 Leader agents — MAX 4 — they plan the battle (e.g. Gemini, Groq,
+ *     OpenRouter or any other provider).
+ *  🛠 Work agents — MAX 1500 — they do the building (1. Gemini (Gemini
+ *     2.5 flash) · 2. OpenRouter · 3. Groq · 4. OpenAI GPT · 5. Venice …).
+ *  The same provider can be added MANY times with DIFFERENT keys — every key
+ *  is its own agent. If one agent stops working (401 / out of credit / rate
+ *  limit), its task automatically moves to the next healthy agent. */
+function AgentRoster({ providers, agentTab, setAgentTab, statuses, busyId, onToggleLeader, onRefreshStatuses }: {
+  providers: Provider[]
+  agentTab: 'all' | 'active'
+  setAgentTab: (t: 'all' | 'active') => void
+  statuses: Record<string, string>
+  busyId: string | null
+  onToggleLeader: (p: Provider) => void
+  onRefreshStatuses: () => void
+}) {
+  const leaders = providers.filter(p => p.role === 'leader')
+  const workers = providers.filter(p => p.role !== 'leader')
+  // Active tab: only agents the load balancer still routes work to
+  const isAlive = (p: Provider) => (statuses[p.id] || 'healthy') !== 'dead'
+  const visible = agentTab === 'active' ? providers.filter(isAlive) : providers
+  const visibleLeaders = visible.filter(p => p.role === 'leader')
+  const visibleWorkers = visible.filter(p => p.role !== 'leader')
+
+  const statusDot = (p: Provider) => {
+    const s = statuses[p.id] || 'healthy'
+    if (s === 'dead') return <span title="dead — its tasks moved to other agents" className="w-2 h-2 rounded-full bg-red-500 shrink-0 inline-block" />
+    if (s === 'cooldown') return <span title="cooling down (rate limit) — auto-recovers" className="w-2 h-2 rounded-full bg-amber-500 shrink-0 inline-block" />
+    return <span title="healthy & ready" className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 inline-block" />
+  }
+
+  const row = (p: Provider, n: number) => (
+    <div key={p.id} className={`flex items-center gap-2 px-2 py-1.5 text-[11px] ${p.role === 'leader' ? 'bg-amber-500/5' : ''}`}>
+      <span className="font-mono text-muted-foreground w-8 shrink-0 text-right">#{n}</span>
+      <button
+        type="button"
+        onClick={() => onToggleLeader(p)}
+        disabled={busyId === p.id}
+        title={p.role === 'leader' ? 'Tap to demote to WORK agent' : 'Tap to promote to LEADER (max 4)'}
+        className="shrink-0 disabled:opacity-50"
+      >
+        {busyId === p.id
+          ? <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+          : p.role === 'leader'
+            ? <Crown className="w-3.5 h-3.5 text-amber-500" />
+            : <Bot className="w-3.5 h-3.5 text-muted-foreground hover:text-amber-500" />}
+      </button>
+      <span className="font-medium truncate max-w-[9rem] sm:max-w-[12rem]">{p.name}</span>
+      <span className="text-muted-foreground truncate flex-1 min-w-0 font-mono text-[10px]">{p.model}</span>
+      {p.role === 'leader' && <Badge variant="outline" className="text-[9px] py-0 border-amber-500/40 text-amber-500 shrink-0">LEADER</Badge>}
+      <Badge variant="outline" className="text-[9px] py-0 shrink-0 hidden sm:inline-flex">{p.kind}</Badge>
+      {statusDot(p)}
+    </div>
+  )
+
+  return (
+    <Card className="p-3 space-y-2.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-sm font-medium flex items-center gap-1.5">
+          <Users className="w-3.5 h-3.5 text-primary" />
+          Agents
+          <span className="text-[10px] text-muted-foreground font-normal">
+            {providers.length} added · {leaders.length}/4 leaders · {providers.length - leaders.length}/1500 work agents
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {/* All Agent | Active agent */}
+          <div className="flex rounded-md border border-border overflow-hidden text-[11px]">
+            <button
+              type="button"
+              onClick={() => setAgentTab('all')}
+              className={`px-2.5 py-1 transition ${agentTab === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60'}`}
+            >
+              All Agent ({providers.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => { setAgentTab('active'); onRefreshStatuses() }}
+              className={`px-2.5 py-1 transition flex items-center gap-1 ${agentTab === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/60'}`}
+            >
+              <Activity className="w-3 h-3" />Active agent
+            </button>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onRefreshStatuses} title="Refresh live status">
+            <Activity className="w-3.5 h-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {providers.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No agents yet — add a key with the form above and it appears here as a working agent.
+          One key = one agent. The same provider can be added many times with different keys.
+        </p>
+      ) : (
+        <>
+          {/* ── Leader agents (max 4) ── */}
+          <div>
+            <div className="text-[11px] font-medium flex items-center gap-1.5">
+              <Crown className="w-3 h-3 text-amber-500" />
+              Leader agent
+              <span className="text-muted-foreground font-normal">— maximum 4 · e.g. Gemini, Groq, OpenRouter or any other</span>
+            </div>
+            {visibleLeaders.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground mt-1 px-2">
+                No leaders yet — tap the 🤖 icon on any agent below to crown it a LEADER.
+                Leaders plan the battle and brief every worker before the swarm starts.
+              </p>
+            ) : (
+              <div className="mt-1 rounded-md border border-amber-500/30 divide-y divide-border/60 overflow-hidden">
+                {visibleLeaders.map((p, i) => row(p, i + 1))}
+              </div>
+            )}
+          </div>
+
+          {/* ── Work agents (max 1500) ── */}
+          <div>
+            <div className="text-[11px] font-medium flex items-center gap-1.5">
+              <Bot className="w-3 h-3 text-primary" />
+              Work agent
+              <span className="text-muted-foreground font-normal">— maximum 1500 · every key is one agent</span>
+            </div>
+            {visibleWorkers.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground mt-1 px-2">
+                No work agents in this view{agentTab === 'active' ? ' — every agent is currently dead; its tasks were handed to the built-in Z.ai fallback' : ''}.
+              </p>
+            ) : (
+              <div className="mt-1 max-h-56 overflow-y-auto rounded-md border border-border divide-y divide-border/60">
+                {visibleWorkers.slice(0, 150).map((p, i) => row(p, i + 1))}
+                {visibleWorkers.length > 150 && (
+                  <div className="px-2 py-1.5 text-[10px] text-muted-foreground">
+                    … and {visibleWorkers.length - 150} more work agents — ALL of them run together (cap 1500).
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Auto failover note */}
+          <div className="text-[10px] text-muted-foreground flex items-start gap-1.5 bg-emerald-500/5 border border-emerald-500/20 rounded p-2">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0 mt-0.5 text-emerald-500" />
+            <span>
+              Auto failover: if one agent stops working — 401, expired key, or out of tokens/credit — its tasks
+              instantly move to the next healthy agent (even a different provider, e.g. Groq → Gemini). The dot
+              shows live status: <span className="text-emerald-500">green</span> ready ·{' '}
+              <span className="text-amber-500">amber</span> rate-limited · <span className="text-red-500">red</span> dead.
+            </span>
+          </div>
+        </>
+      )}
+    </Card>
+  )
+}

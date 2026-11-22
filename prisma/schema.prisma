@@ -1,0 +1,722 @@
+// Cloud Agent — Prisma schema
+// Uses SQLite locally as a clean adapter; swap to PostgreSQL by changing
+// DATABASE_URL and provider. All persistence logic is in `src/lib/db.ts`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  framework    String? // auto-detected: next | react | vite | node | flutter | python | java | static | unknown
+  language     String? // ts | js | dart | py | java | ...
+  runtime      String? // node | flutter | python | java | static
+  entryPort    Int? // exposed preview port
+  status       String    @default("stopped") // running | building | failed | stopped
+  lastOpenedAt DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  workspaceId  String? // optional: belongs to a workspace (agency mode)
+  deletedAt    DateTime? // v62: soft-delete (trash) — null = alive, set = in trash
+  userId       String? // BUSINESS v2: owner (AuthUser) — null = legacy owner-less project (admin-visible)
+
+  user AuthUser? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspace Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  files     File[]
+  builds    Build[]
+  agents    AgentRun[]
+  settings  ProjectSetting[]
+  envVars   EnvVar[]
+  schedules Schedule[]
+
+  @@index([lastOpenedAt])
+  @@index([workspaceId])
+  @@index([deletedAt])
+  @@index([userId])
+  @@index([userId, deletedAt, lastOpenedAt]) // v110: per-tenant list query (userId + not-trashed + recency)
+}
+
+model File {
+  id        String   @id @default(cuid())
+  projectId String
+  path      String // relative path inside project, e.g. "src/index.ts"
+  content   String   @default("")
+  isDir     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, path])
+  @@index([projectId])
+}
+
+model Build {
+  id           String    @id @default(cuid())
+  projectId    String
+  target       String // web | apk | aab | docker | ...
+  status       String    @default("queued") // queued | running | success | failed | cancelled
+  logs         String    @default("")
+  artifactPath String? // path to generated artifact (zip/apk/...)
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model AgentRun {
+  id        String   @id @default(cuid())
+  projectId String
+  prompt    String
+  status    String   @default("running") // running | completed | failed | stopped
+  model     String?
+  provider  String?
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  toolCalls Int      @default(0)
+  response  String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, createdAt])
+}
+
+model ProjectSetting {
+  id        String @id @default(cuid())
+  projectId String
+  key       String
+  value     String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
+}
+
+model EnvVar {
+  id          String  @id @default(cuid())
+  projectId   String
+  key         String
+  value       String // stored encrypted at app layer (see lib/crypto.ts)
+  isSecret    Boolean @default(true)
+  workspaceId String? // optional: workspace-level secret
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, key])
+}
+
+// Global AI provider configurations (one row per configured provider).
+// API keys are stored encrypted (see lib/crypto.ts).
+model AIProvider {
+  id           String   @id @default(cuid())
+  name         String // display name e.g. "OpenAI", "My Local LLM"
+  kind         String // openai | gemini | claude | groq | openrouter | openai-compatible | custom
+  endpoint     String?
+  apiKeyEnc    String? // encrypted at rest
+  model        String
+  systemPrompt String?
+  temperature  Float    @default(0.7)
+  maxTokens    Int?
+  isDefault    Boolean  @default(false)
+  role         String   @default("work") // leader | work — leaders plan the battle (max 4), workers do the bulk
+  category     String? // free | paid | uncensored | custom (for grouping in UI)
+  tag          String? // personal | client | testing | production (free-form label)
+  workspaceId  String? // optional: belongs to a workspace
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model UserSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model GitHubAccount {
+  id           String   @id @default(cuid())
+  name         String
+  tokenEnc     String // encrypted PAT
+  username     String?
+  defaultOwner String?
+  userId       String? // v123: per-user scoping — every builder sees only their own tokens
+  workspaceId  String? // optional: belongs to a workspace
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId]) // v124: hot-path — per-user account list on every GitHub page load
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Agency / Workspace / Team / Billing / Audit Log
+// ────────────────────────────────────────────────────────────────────────────
+// These models enable multi-tenant agency functionality:
+// - Multiple workspaces per user (each workspace = one client)
+// - Team members with role-based access (Owner/Admin/Developer/Viewer)
+// - Workspace-level AI providers and projects
+// - Client invitations
+// - Billing with credits, invoices, usage tracking
+// - Audit logs for all sensitive actions
+// ────────────────────────────────────────────────────────────────────────────
+
+model Workspace {
+  id               String   @id @default(cuid())
+  name             String // e.g. "Acme Agency" or "Client: Starbucks"
+  slug             String   @unique // URL-safe identifier
+  description      String?
+  logoUrl          String? // white-label branding
+  brandColor       String? // custom brand color
+  customDomain     String? // white-label custom domain
+  plan             String   @default("enterprise") // free | pro | agency | enterprise
+  storageLimitMb   Int      @default(1000000) // workspace storage quota (1 TB for sole user)
+  monthlyBudgetUsd Float    @default(0) // 0 = unlimited
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  members        TeamMember[]
+  invitations    Invitation[]
+  projects       Project[]
+  providers      AIProvider[]
+  envVars        EnvVar[]
+  gitAccounts    GitHubAccount[]
+  auditLogs      AuditLog[]
+  billingRecords BillingRecord[]
+  credits        Credit[]
+}
+
+model TeamMember {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  userId       String // for now, just an identifier — future: User model
+  email        String?
+  name         String?
+  role         String    @default("developer") // owner | admin | developer | viewer
+  invitedBy    String?
+  joinedAt     DateTime  @default(now())
+  lastActiveAt DateTime?
+  status       String    @default("active") // active | suspended | removed
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  workspaceId String
+  email       String
+  role        String    @default("developer")
+  token       String    @unique // invitation token (sent via email link)
+  invitedBy   String
+  status      String    @default("pending") // pending | accepted | declined | expired
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  projectId   String?
+  userId      String?
+  action      String // e.g. "provider.create", "project.delete", "agent.run", "build.start"
+  resource    String? // e.g. "provider:abc123"
+  metadata    String   @default("{}") // JSON string with details
+  ipAddress   String?
+  userAgent   String?
+  severity    String   @default("info") // info | warning | critical
+  createdAt   DateTime @default(now())
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([projectId])
+  @@index([action])
+}
+
+// ─── Billing ───────────────────────────────────────────────────────────────
+
+model BillingRecord {
+  id          String   @id @default(cuid())
+  workspaceId String
+  type        String // subscription | usage | credit_purchase | refund
+  amount      Float // USD
+  description String
+  status      String   @default("pending") // pending | paid | failed | refunded
+  invoiceId   String? // link to Invoice if generated
+  metadata    String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+}
+
+model Credit {
+  id          String    @id @default(cuid())
+  workspaceId String
+  type        String // ai_tokens | build_minutes | storage_mb | api_calls
+  amount      Float // total credits of this type
+  used        Float     @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, type])
+}
+
+model Invoice {
+  id          String    @id @default(cuid())
+  workspaceId String
+  number      String    @unique // human-readable invoice number e.g. INV-2026-001
+  amount      Float
+  currency    String    @default("USD")
+  status      String    @default("draft") // draft | sent | paid | overdue | void
+  dueDate     DateTime?
+  paidAt      DateTime?
+  lineItems   String    @default("[]") // JSON array
+  pdfPath     String?
+  createdAt   DateTime  @default(now())
+}
+
+// ─── Artifact & Build Metadata (extends Build model) ───────────────────────
+// Note: Build model already exists above. We extend its concept with a
+// separate ArtifactMetadata model for SHA-256, expiration, and version tags.
+model ArtifactMetadata {
+  id         String    @id @default(cuid())
+  buildId    String    @unique
+  sha256     String? // checksum of artifact file
+  sizeBytes  Int?
+  versionTag String? // e.g. "1.0.0-beta.3"
+  channel    String    @default("stable") // stable | beta | dev
+  expiresAt  DateTime?
+  sharedWith String? // comma-separated emails or "public"
+  metadata   String    @default("{}")
+  createdAt  DateTime  @default(now())
+}
+
+// ─── Visual Regression Snapshots ──────────────────────────────────────────
+model VisualRegressionSnapshot {
+  id             String   @id @default(cuid())
+  projectId      String
+  name           String // e.g. "homepage-mobile-portrait"
+  screenshotPath String
+  baselinePath   String?
+  diffPath       String?
+  diffPercent    Float?
+  status         String   @default("pending") // pending | passed | failed | reviewed
+  viewport       String? // e.g. "375x812" (iPhone X)
+  createdAt      DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+// ─── Real Device Test Results ──────────────────────────────────────────────
+model DeviceTestResult {
+  id          String   @id @default(cuid())
+  projectId   String
+  buildId     String?
+  deviceName  String // e.g. "iPhone 15 Pro", "Samsung Galaxy S24"
+  osVersion   String // e.g. "iOS 17.4", "Android 14"
+  status      String   @default("pending") // pending | running | passed | failed | crashed
+  screenshots String   @default("[]") // JSON array of paths
+  videoPath   String?
+  crashLog    String?
+  duration    Int? // seconds
+  provider    String? // "browserstack" | "firebase-test-lab" | "saucelabs"
+  createdAt   DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+// ─── Agent Queue & Checkpoints ─────────────────────────────────────────────
+model AgentTask {
+  id             String    @id @default(cuid())
+  projectId      String
+  workspaceId    String?
+  prompt         String
+  status         String    @default("queued") // queued | running | paused | completed | failed | cancelled
+  priority       Int       @default(0) // higher = more urgent
+  agentRunId     String? // linked AgentRun when running
+  checkpoint     String? // JSON snapshot of messages[] for resume
+  maxTokens      Int?
+  maxIterations  Int?
+  maxFileChanges Int?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  errorMessage   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([projectId, status, priority])
+  @@index([workspaceId, status])
+}
+
+// ─── Observability Metrics ─────────────────────────────────────────────────
+model MetricPoint {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  providerId  String?
+  key         String // e.g. "request.total", "request.success", "latency.avg"
+  value       Float
+  tags        String   @default("{}") // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@index([workspaceId, key])
+}
+
+// ─── Prompt Library ────────────────────────────────────────────────────────
+model PromptLibrary {
+  id          String   @id @default(cuid())
+  title       String
+  prompt      String
+  category    String   @default("general") // code | debug | design | architecture | review | general
+  tags        String   @default("[]") // JSON array
+  isPublic    Boolean  @default(false)
+  workspaceId String?
+  useCount    Int      @default(0)
+  rating      Float    @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, isPublic])
+  @@index([workspaceId])
+}
+
+// ─── Model Benchmark Results ──────────────────────────────────────────────
+model ModelBenchmark {
+  id         String   @id @default(cuid())
+  providerId String
+  model      String
+  task       String // e.g. "code_generation", "math", "reasoning", "translation"
+  score      Float // 0-100
+  latencyMs  Int
+  tokensIn   Int
+  tokensOut  Int
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  @@unique([providerId, model, task])
+  @@index([task, score])
+}
+
+// ─── Custom Widget Library ─────────────────────────────────────────────────
+model CustomWidget {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  framework   String // react | flutter | vue | svelte
+  codePath    String // path to the saved widget file in project
+  tags        String   @default("[]")
+  workspaceId String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([framework])
+  @@index([workspaceId])
+}
+
+// ─── Workspace-scoped Project / Provider / EnvVar / GitHubAccount ──────────
+// We add an optional workspaceId to Project, AIProvider, EnvVar, GitHubAccount
+// so they can belong to a specific workspace. Existing rows default to null
+// (meaning "personal/global", which preserves backward compatibility).
+// ────────────────────────────────────────────────────────────────────────────
+
+// ════════════════════════════════════════════════════════════════════════════
+// v24 ULTRA PACK — Analytics + Version History
+// ════════════════════════════════════════════════════════════════════════════
+
+model AnalyticsHit {
+  id        String   @id @default(cuid())
+  projectId String
+  path      String   @default("/")
+  referrer  String   @default("")
+  ua        String   @default("")
+  day       String // YYYY-MM-DD (UTC) for fast grouping
+  createdAt DateTime @default(now())
+
+  @@index([projectId, day])
+  @@index([projectId, createdAt])
+}
+
+model VersionSnapshot {
+  id        String   @id @default(cuid())
+  projectId String
+  label     String   @default("manual snapshot")
+  fileCount Int      @default(0)
+  bytes     Int      @default(0)
+  dir       String // absolute path of the snapshot directory on disk
+  createdAt DateTime @default(now())
+
+  @@index([projectId, createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// v25 OWNER PACK — Passkeys (biometric unlock) + Sessions + Usage tracking
+// ════════════════════════════════════════════════════════════════════════════
+
+// A registered device passkey (fingerprint / face / screen-lock) that can
+// unlock the builder WITHOUT the PIN — only on the device that enrolled it.
+model LockPasskey {
+  id           String   @id @default(cuid())
+  credentialId String   @unique // base64url of the authenticator credential id
+  publicKeyJwk String // JSON Web Key (EC2 P-256) used to verify assertions
+  signCount    Int      @default(0)
+  transports   String   @default("") // comma-separated: internal,hybrid,usb,ble,nfc
+  label        String   @default("This device")
+  createdAt    DateTime @default(now())
+  lastUsedAt   DateTime @default(now())
+}
+
+// One row per issued lock session cookie — lets the owner see and revoke
+// signed-in devices from Settings → Security.
+model LockSession {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique // sha256 of the ca_lock cookie value
+  device     String   @default("Unknown device")
+  ip         String   @default("")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  @@index([lastSeenAt])
+}
+
+// Aggregate AI usage per day + provider + model (tokens and request counts)
+// recorded at the single choke point where every chat call flows through.
+model UsageDaily {
+  id         String   @id @default(cuid())
+  day        String // YYYY-MM-DD (UTC)
+  provider   String
+  model      String   @default("")
+  kind       String   @default("chat") // chat | image | embed
+  requests   Int      @default(0)
+  tokensIn   Int      @default(0)
+  tokensOut  Int      @default(0)
+  errorCount Int      @default(0)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([day, provider, model, kind])
+  @@index([day])
+}
+
+// v58: scheduled army runs — the user's AI army fires itself on a timer.
+// One row per schedule. The server-side scheduler (src/lib/scheduler.ts)
+// ticks every 30s, and when nextRunAt is due it fires the run through the
+// SAME public code path (/api/agent for single, /api/multi-agent for swarm),
+// then stamps lastRunAt/nextRunAt/lastStatus so the UI shows honest truth.
+model Schedule {
+  id              String    @id @default(cuid())
+  projectId       String
+  prompt          String
+  mode            String    @default("single") // single | swarm
+  intervalMinutes Int       @default(60) // minimum 5, enforced at API layer
+  enabled         Boolean   @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime? // null while disabled
+  lastStatus      String    @default("never run yet")
+  lastRunId       String? // run id of the latest fired run (shows in 🕘 history)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([nextRunAt])
+}
+
+// ─── BUSINESS v2 — multi-tenant auth + subscription plans ───
+// Replaces the single-owner PIN lock: every visitor registers/signs in,
+// owns their own projects, and sits on a monthly plan.
+model AuthUser {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String // scrypt: salt:hex
+  name          String    @default("")
+  role          String    @default("user") // user | admin — first registered user becomes admin
+  plan          String    @default("free") // free | pro | pro_plus | ultra | pro_max | ultra_pro_max
+  planKind      String    @default("free") // v110: free | monthly | lifetime | admin (how the plan was granted)
+  planStartedAt DateTime?
+  planExpiresAt DateTime? // v110: monthly plans expire here (null = never / lifetime / admin)
+  status        String    @default("active") // active | suspended
+  createdAt     DateTime  @default(now())
+  lastLoginAt   DateTime?
+
+  // v119 REFER & EARN — plain columns (no FK → safe additive ALTER on live SQLite)
+  referralCode  String?   @unique // personal invite code, shared as /register?ref=CODE
+  referredById  String? // id of the user whose code was used at signup
+  referredAt    DateTime? // when the referral completed
+
+  projects Project[]
+  sessions AuthSession[]
+  payments Payment[]
+
+  @@index([email])
+  @@index([plan, status]) // v110: admin billing views
+  @@index([referredById]) // v119: referral stats
+}
+
+model AuthSession {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique // sha256 of the signed session token (cookie + x-ca-lock header channel)
+  userId     String
+  device     String   @default("Unknown device")
+  ip         String   @default("")
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─── v110 RAZORPAY — real self-serve payments ───
+// One row per checkout attempt. An order is `created` when the Razorpay
+// checkout opens and flips to `paid` only after HMAC signature verification
+// (checkout callback AND the webhook both converge here, idempotently).
+model Payment {
+  id                String    @id @default(cuid())
+  userId            String
+  plan              String // pro | pro_plus | ultra | pro_max | ultra_pro_max
+  kind              String    @default("monthly") // monthly | lifetime
+  amount            Int // paise (Razorpay's unit)
+  currency          String    @default("INR")
+  status            String    @default("created") // created | paid | failed | refunded
+  method            String? // upi | card | netbanking | wallet | emi (from webhook/callback)
+  razorpayOrderId   String    @unique
+  razorpayPaymentId String?
+  razorpaySignature String?
+  failureReason     String?
+  // v129 — UPI-direct manual payments (owner's UPI ID + AI-assisted verification)
+  utr               String?   // user-submitted UPI reference / UTR (12-char)
+  screenshot        String?   // optional payment screenshot as base64 data URL (<= ~1.2MB)
+  aiScore           Int?      // 0-100 AI confidence for the review queue
+  aiVerdict         String?   // likely-valid | needs-review | likely-fraud
+  aiReason          String?   // AI reasoning summary (pipe-joined bullets)
+  adminNote         String?
+  reviewedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  paidAt            DateTime?
+
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+// ─── v123 MARKETPLACE — users share/sell the apps they built ───
+// Plain id columns (no FK) → safe additive ALTER on the live SQLite DB.
+model MarketListing {
+  id          String   @id @default(cuid())
+  sellerId    String   // AuthUser id
+  sellerName  String   @default("")
+  projectId   String   // source project snapshot
+  title       String
+  description String   @default("")
+  category    String   @default("apps") // apps | games | business | portfolio | tools | other
+  priceInr    Int      @default(0) // 0 = free share; >0 = paid (installs need Razorpay keys)
+  thumbSvg    String?  // small inline SVG preview card
+  status      String   @default("published") // published | removed
+  installs    Int      @default(0)
+  fileCount   Int      @default(0)
+  sizeBytes   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([sellerId])
+}
+
+model MarketPurchase {
+  id        String   @id @default(cuid())
+  listingId String
+  buyerId   String
+  priceInr  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId])
+}
+
+// ─── v123 REAL-TIME COLLABORATION — 2+ users on the same app ───
+model ProjectCollaborator {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String   // collaborator AuthUser id
+  email     String
+  name      String   @default("")
+  role      String   @default("editor") // editor | viewer
+  status    String   @default("active") // active | removed
+  invitedBy String   @default("")
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+}
+
+// ─── v123 CUSTOM DOMAINS — run your app on your own domain ───
+model CustomDomain {
+  id            String    @id @default(cuid())
+  userId        String
+  projectId     String
+  domain        String    @unique // lowercase host, e.g. shop.mybrand.in
+  verifyToken   String    // expected TXT value at _ca-verify.<domain>
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime?
+  lastCheckedAt DateTime?
+  status        String    @default("pending") // pending | verified | error
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+// ─── v134 EMAIL SYSTEM — transactional mail + admin outbox ───
+// Every email the platform composes lands here first (outbox pattern).
+// SMTP sends happen when credentials are configured (admin panel);
+// without them rows stay 'queued' and the admin can retry anytime.
+model EmailLog {
+  id        String    @id @default(cuid())
+  to        String // recipient email
+  userId    String?   // AuthUser id when the recipient is a user
+  kind      String    @default("custom") // welcome | payment_submitted | payment_approved | payment_rejected | broadcast | test | custom
+  subject   String
+  body      String // HTML body
+  status    String    @default("queued") // queued | sent | failed
+  provider  String    @default("") // smtp | queued
+  error     String?   // last send error (failed rows)
+  attempts  Int       @default(0)
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([status, createdAt])
+  @@index([to])
+  @@index([userId])
+}

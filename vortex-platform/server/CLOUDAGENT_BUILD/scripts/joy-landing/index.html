@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vortex Cloud Agent — AI App Builder | Build Real Apps by Chatting</title>
+<meta name="description" content="Vortex Cloud Agent is the AI app builder where one prompt deploys a swarm of up to 1,000 AI agents that plan, code, review and ship real software — real Linux terminal, APK/.exe exports, custom domains, UPI billing. Free open hours every month.">
+<meta name="keywords" content="vortex cloud agent, vortex cloudagent, vortex cloud agent app builder, AI app builder, multi-agent coding, build apps with AI, AI agent army">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Vortex Cloud Agent">
+<meta name="theme-color" content="#05070f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<!-- Open Graph -->
+<meta property="og:title" content="Vortex Cloud Agent — AI App Builder">
+<meta property="og:description" content="One prompt → a 1,000-agent swarm that plans, codes, reviews and ships real software.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Vortex Cloud Agent">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vortex Cloud Agent — AI App Builder">
+<meta name="twitter:description" content="Command an army of 1,000 AI agents. Build real apps by chatting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@600&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Vortex Cloud Agent",
+  "alternateName": ["Vortex CloudAgent", "Vortex Cloud Agent app builder"],
+  "url": "https://nz.in.s3.joy.services/vortex-websites/vortex-cloud-agent/index.html",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web, Android, Windows, Linux",
+  "description": "AI app builder: one prompt deploys a coordinated swarm of up to 1,000 AI agents that plan, code, review and ship real software — with a real Linux terminal, APK/.exe exports, custom domains and UPI billing.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR", "description": "Free open hours every month + paid plans" },
+  "featureList": [
+    "1,000-agent swarm builds",
+    "Real Linux terminal",
+    "Android APK and desktop .exe export",
+    "Built-in open-source AI models (no API key needed)",
+    "Bring your own AI keys",
+    "Scheduled autonomous runs"
+  ]
+}
+</script>
+<style>
+:root{
+  --bg:#05070f; --panel:rgba(255,255,255,.035); --panel2:rgba(255,255,255,.06);
+  --line:rgba(255,255,255,.09); --text:#e9eef7; --muted:#93a0b5;
+  --cyan:#22d3ee; --violet:#a78bfa; --mint:#34d399; --amber:#fbbf24;
+  --grad:linear-gradient(92deg,#22d3ee 0%,#a78bfa 60%,#34d399 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:Inter,'Noto Sans Bengali',system-ui,sans-serif;
+  min-height:100vh;padding:0;overflow-x:hidden}
+.bg-grid{position:fixed;inset:0;z-index:-2;
+  background-image:linear-gradient(rgba(255,255,255,.033) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.033) 1px,transparent 1px);
+  background-size:44px 44px;mask-image:radial-gradient(75% 60% at 50% 0%,#000 30%,transparent 100%)}
+.blob{position:fixed;border-radius:50%;filter:blur(130px);z-index:-3;opacity:.5}
+.b1{width:480px;height:480px;background:#0e7490;top:-160px;left:-110px;animation:drift 14s ease-in-out infinite alternate}
+.b2{width:420px;height:420px;background:#4c1d95;bottom:-140px;right:-120px;animation:drift 18s ease-in-out infinite alternate-reverse}
+@keyframes drift{to{transform:translate(50px,36px) scale(1.08)}}
+.wrap{max-width:1060px;margin:0 auto;padding:28px 22px 70px}
+nav{display:flex;align-items:center;justify-content:space-between;padding:10px 0 26px}
+.brand{display:flex;align-items:center;gap:10px;font-family:'Space Grotesk';font-weight:700;font-size:17px;letter-spacing:-.01em}
+.brand .bolt{width:34px;height:34px;display:grid;place-items:center;font-size:16px;border-radius:10px;
+  background:linear-gradient(135deg,#164e63,#4c1d95);border:1px solid var(--line)}
+nav .cta{display:inline-flex;border-radius:11px;padding:9px 16px;font-weight:600;font-size:13.5px;
+  background:linear-gradient(92deg,#0891b2,#7c3aed);color:#fff;text-decoration:none}
+.hero{text-align:center;padding:54px 0 34px}
+.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;font-size:12px;color:var(--mint);background:rgba(52,211,153,.07);margin-bottom:20px}
+h1{font-family:'Space Grotesk';font-size:clamp(30px,6vw,52px);line-height:1.06;letter-spacing:-.02em}
+h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--muted);font-size:15.5px;line-height:1.7;max-width:640px;margin:18px auto 0}
+.sub b{color:var(--text)}
+.btnrow{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:12px;
+  padding:13px 24px;font-weight:600;font-size:15px;text-decoration:none;transition:.2s;border:1px solid transparent}
+.btn-primary{background:linear-gradient(92deg,#0891b2,#7c3aed);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.35)}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-ghost{border-color:var(--line);background:var(--panel);color:var(--text);font-size:14px}
+.btn-ghost:hover{background:var(--panel2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:34px}
+.card{border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:20px}
+.card h3{font-size:15px;margin-bottom:8px;font-weight:700}
+.card p{font-size:13px;color:var(--muted);line-height:1.65}
+.card .ico{font-size:20px;margin-bottom:10px;display:block}
+.steps{list-style:none;max-width:560px;margin:26px auto 0;text-align:left;display:grid;gap:12px}
+.steps li{font-size:14px;color:var(--muted);padding-left:30px;position:relative;line-height:1.6}
+.steps li b{color:var(--text);font-weight:600}
+.steps li::before{content:"✓";position:absolute;left:2px;color:var(--mint);font-weight:700}
+.hidden{display:none}
+.note{margin-top:16px;font-size:12.5px;color:var(--muted);text-align:center}
+.note a{color:var(--cyan);text-decoration:none}
+footer{border-top:1px solid var(--line);margin-top:44px;padding-top:20px;text-align:center;
+  color:var(--muted);font-size:12.5px;line-height:1.7}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="blob b1"></div>
+<div class="blob b2"></div>
+
+<div class="wrap">
+  <nav>
+    <div class="brand"><span class="bolt">⚡</span>Vortex Cloud Agent</div>
+    <a class="cta" href="#get-started">Get started</a>
+  </nav>
+
+  <section class="hero">
+    <span class="pill">⚡ Open to everyone · Free platform hours every month · Pay in ₹ with UPI</span>
+    <h1>Don't prompt a chatbot.<br><span class="grad">Command an army of 1,000 agents.</span></h1>
+    <p class="sub"><b>Vortex Cloud Agent</b> is the AI app builder where one instruction deploys a coordinated
+    swarm that plans, codes, reviews and ships real software — with a real Linux terminal, real deploys
+    and real exports. <b>Apnar apps, apnar niyome.</b></p>
+    <div class="btnrow" id="enterWrap">
+      <a id="enterRegister" class="btn btn-primary" href="#">Create Free Account →</a>
+      <a id="enterLogin" class="btn btn-ghost" href="#">Sign in →</a>
+    </div>
+    <div id="noLink" class="hidden">
+      <ol class="steps">
+        <li><b>Open the Vortex Cloud Agent builder</b> — use the workspace link you received with your welcome message.</li>
+        <li><b>Sign in directly</b> — your email + password works instantly; new here? "Create account" is open to everyone.</li>
+        <li><b>Pick your plan in-app</b> — pay via UPI; the plan activates right after quick verification.</li>
+      </ol>
+      <p class="note">Got the workspace link as <b>?u=…</b>? This page remembers it and unlocks the buttons above.</p>
+    </div>
+    <p class="note">Lost your workspace link? <a href="mailto:mdhonabali61@gmail.com">Email us</a> and we'll resend it.</p>
+  </section>
+
+  <section class="grid">
+    <div class="card"><span class="ico">🤖</span><h3>1,000-agent swarm</h3><p>One prompt becomes a coordinated army: a coordinator plans, quality agents review, hundreds of writers build in parallel lanes.</p></div>
+    <div class="card"><span class="ico">🖥️</span><h3>Real terminal, real shell</h3><p>A genuine Linux terminal per project — install anything, run migrations, debug like a developer. Self-heals after restarts.</p></div>
+    <div class="card"><span class="ico">🚀</span><h3>Ship to APK, .exe and web</h3><p>Export real installers: Android APK, Electron desktop executables, Docker, or publish to the web with custom domains.</p></div>
+    <div class="card"><span class="ico">💸</span><h3>Pay in ₹, with UPI</h3><p>Razorpay checkout with PhonePe, GPay, Paytm, cards and netbanking. No dollar cards, no forex markup.</p></div>
+    <div class="card"><span class="ico">🧠</span><h3>No API key? No problem.</h3><p>Open-source models (Qwen, DeepSeek, Llama, Gemma, Phi, Mistral) run right on the server — start building with zero AI keys.</p></div>
+    <div class="card"><span class="ico">⏰</span><h3>Autonomous schedules</h3><p>Your agent army fires itself on a timer — nightly refactors, hourly scrapers, cron-style maintenance.</p></div>
+  </section>
+
+  <section id="get-started" style="text-align:center;padding-top:44px">
+    <h2 style="font-family:'Space Grotesk';font-size:26px;letter-spacing:-.02em">Ready to command your army?</h2>
+    <div class="btnrow" id="enterWrap2">
+      <a id="enterRegister2" class="btn btn-primary" href="#">Create Free Account →</a>
+      <a id="enterLogin2" class="btn btn-ghost" href="#">Sign in →</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Vortex Cloud Agent — the multi-agent AI app builder.</div>
+    <div>Made in India for Indian builders · Support: <a href="mailto:mdhonabali61@gmail.com" style="color:var(--cyan);text-decoration:none">mdhonabali61@gmail.com</a></div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  var KEY = 'ca_platform_url';
+  function valid(u) {
+    try { var p = new URL(u); return p.protocol === 'https:' || p.protocol === 'http:'; }
+    catch (e) { return false; }
+  }
+  function show(url) {
+    var u = String(url).trim().replace(/\/+$/, '');
+    ['enterWrap', 'enterWrap2'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.remove('hidden'); });
+    var no = document.getElementById('noLink'); if (no) no.classList.add('hidden');
+    [['enterRegister', '/register'], ['enterLogin', '/login'],
+     ['enterRegister2', '/register'], ['enterLogin2', '/login']].forEach(function (p) {
+      var el = document.getElementById(p[0]); if (el) el.href = u + p[1];
+    });
+  }
+  var fromLink = '';
+  try {
+    fromLink = new URLSearchParams(location.search).get('u') || '';
+    if (!fromLink && location.hash.indexOf('#u=') === 0) fromLink = decodeURIComponent(location.hash.slice(3));
+    fromLink = (fromLink || '').trim();
+    if (valid(fromLink)) { try { localStorage.setItem(KEY, fromLink); } catch (e) {} }
+    else fromLink = '';
+  } catch (e) { fromLink = ''; }
+  var saved = '';
+  try { saved = localStorage.getItem(KEY) || ''; } catch (e) {}
+  var picked = fromLink || (valid(saved) ? saved : '');
+  if (picked) show(picked); else {
+    ['enterWrap', 'enterWrap2'].forEach(function (id) { var el = document.getElementById(id); if (el) el.classList.add('hidden'); });
+    var no = document.getElementById('noLink'); if (no) no.classList.remove('hidden');
+  }
+})();
+</script>
+</body>
+</html>

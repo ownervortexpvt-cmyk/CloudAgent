@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Android APK Downloads | VORTEX</title>
+  <meta name="description" content="Download VORTEX Android apps as APK files directly from the official hub — latest versions, changelogs and update announcements.">
+  <link rel="icon" type="image/png" href="assets/brand-tile-64.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#05070f">
+  <meta name="color-scheme" content="dark">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=20">
+</head>
+<body data-page="apk">
+  <div id="announcement-root"></div>
+  <div id="update-banner-root"></div>
+  <header class="site-header" id="site-header"></header>
+
+  <div class="search-strip" id="search-strip"><div class="container">
+        <div class="search-wrap">
+        <svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5" stroke-linecap="round"/></svg>
+        <input class="search-input" id="app-search" type="search" placeholder="Search apps — name, type, feature…" autocomplete="off" aria-label="Search apps">
+        <button type="button" class="s-clear" id="app-search-clear" aria-label="Clear search" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="14" height="14"><path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/></svg>
+        </button>
+        </div>
+        <p class="s-count" id="app-search-count" hidden></p>
+      </div></div>
+
+  <main>
+    <section class="page-hero">
+      <div class="container">
+        <span class="kicker">Android APK downloads</span>
+        <h1>Straight to your <span class="grad-text">Android device.</span></h1>
+        <p>Official VORTEX APK releases, published directly on this site. Tap "Download APK" to get the latest version — when a newer release goes live, you will see an "Update version available" message right here.</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+                <div class="apps-grid" id="apps-grid"></div>
+
+        <div class="guide-box" style="margin-top:2.6rem">
+          <h3>Installing an APK — quick guide</h3>
+          <ol>
+            <li>Tap <b>Download APK</b> on any app card below or on its detail page.</li>
+            <li>If your phone asks, allow installs <b>from this source</b> (browser) in your settings.</li>
+            <li>Open the downloaded file and confirm the install.</li>
+            <li>Revisit this page any time — new versions are announced with a clear changelog.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="site-footer"></footer>
+  <script src="js/apps-data.js?v=20"></script>
+  <script src="js/main.js?v=20"></script>
+  <script src="js/download-manager.js?v=20"></script>
+  <script src="js/pages.js?v=20"></script>
+</body>
+</html>

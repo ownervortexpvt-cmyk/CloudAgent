@@ -1,0 +1,13 @@
+{
+  "name": "cloudagent-local-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenAI-compatible local GGUF model server for CloudAgent (zero-API-key builder layer).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "node-llama-cpp": "^3.14.0"
+  }
+}

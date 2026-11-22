@@ -1,0 +1,56 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+}
+main { text-align: center; }
+h1 { font-size: 2.5rem; margin-bottom: 1rem; }
+button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  background: #1e293b;
+  color: #e2e8f0;
+  font-size: 1rem;
+  cursor: pointer;
+}
+button:hover { background: #334155; }
+
+/* Testimonials Section Styling */
+#testimonials {
+    /* This background is set in the HTML, but you can override it here if needed */
+    /* background-color: #111827; */
+}
+
+#testimonials .container {
+    max-width: 1200px; /* Match your container's max-width if different */
+}
+
+/* Styling for the testimonial cards */
+#testimonials .bg-gray-800 {
+    border: 1px solid #374151; /* A subtle border for definition */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+#testimonials .bg-gray-800:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+#testimonials .text-yellow-400 {
+    font-family: Georgia, 'Times New Roman', Times, serif; /* A classic serif for quotes */
+    line-height: 1;
+}
+
+#testimonials p {
+    line-height: 1.6;
+}
+
+#testimonials .flex.items-center img {
+    border: 2px solid #4B5563; /* A border for the profile images */
+}
