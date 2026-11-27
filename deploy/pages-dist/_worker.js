@@ -14,7 +14,7 @@
  * project — the Worker code lives inside the Pages project.
  */
 
-const DEFAULT_BACKEND = "https://loans-lodging-dis-international.trycloudflare.com";
+const DEFAULT_BACKEND = "https://employer-domestic-clothes-operators.trycloudflare.com";
 const DEFAULT_SESSION = "web-ade5d89e-9b30-402f-9325-86c152ea835d";
 
 // Hop-by-hop headers must never be forwarded.

@@ -23,10 +23,6 @@
 'use strict'
 
 const fs = require('fs')
-// v167.1 secret hygiene — live credentials load from .secrets (never committed)
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
-
 const path = require('path')
 const { spawn } = require('child_process')
 
@@ -114,7 +110,7 @@ async function ensureBinary() {
 // ── step 4: patch _worker.js + redeploy Pages ──
 // Credentials are HARDCODED (owner-provided) because the sandbox rewrites
 // .env on every boot; .env values still win when present.
-const CF_TOKEN_DEFAULT = (SECRETS.cfToken || '')
+const CF_TOKEN_DEFAULT = (SECRETS.cfToken || process.env.CF_API_TOKEN || '')
 const CF_ACCOUNT_DEFAULT = (SECRETS.cfAccount || '')
 const CF_PROJECT_DEFAULT = 'vortex-cloud-agent'
 

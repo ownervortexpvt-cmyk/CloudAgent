@@ -567,7 +567,23 @@ while true; do
   # v153.3 — TOOLCHAIN AUTO-HEAL: the owner's standing order — toolchains are
   # ALWAYS installed ("kokhonoi reset hobena"). When the re-sync wipes them,
   # reinstall directly (resumable, downloads ~10-20 min) at most every 30 min.
-  if [ ! -e "$BASE/sdk/flutter-sdk/bin/flutter" ] || [ ! -e "$BASE/sdk/jdk-17/bin/javac" ]; then
+  # v164.4 — FORGE MUTEX: while a runtime forge is building, sdk/ is an
+  # empty shield dir; installing toolchains into it would corrupt the build
+  # AND land 3G of duplicates on the rootfs. Defer the heal.
+  # v164.10 — WATCHDOG-FAMILY FORGE: a forge whose ancestors die (server
+  # respawns kill the old tree) gets orphan-reaped by the sandbox within
+  # minutes — 35 "Killed" builds proved it. A forge spawned by THE WATCHDOG
+  # (this immortal script) has a living parent forever → the reaper leaves
+  # it alone. Spawn the doctor here when a new build is pending.
+  if [ -f "$BASE/.forge-v164-pending" ] && [ ! -f "$BASE/.forge-active" ]; then
+    # v164.10b — do NOT delete the marker here: the doctor's forge-injection
+    # requires it (and clears it only after a VERIFIED BUILD_ID). Deleting it
+    # here made the doctor skip the forge and go straight to toolchain heals.
+    log "pending v164 forge detected — spawning sdk-doctor as watchdog child (reaper-immune)"
+    ( bash "$BASE/scripts/sdk-doctor.sh" >> "$BASE/sdk-doctor.log" 2>&1 ) &
+  elif [ -f "$BASE/.forge-active" ]; then
+    log "forge build active — skipping toolchain auto-heal this pass"
+  elif [ ! -e "$BASE/sdk/flutter-sdk/bin/flutter" ] || [ ! -e "$BASE/sdk/jdk-17/bin/javac" ]; then
     TMARK=/home/sync/.tc-heal-ts
     TNOW=$(date +%s); TLAST=$(cat "$TMARK" 2>/dev/null || echo 0)
     if [ $((TNOW - TLAST)) -ge 1800 ]; then
@@ -620,7 +636,13 @@ while true; do
       (cp -a "$LIVE_RT/." "$ROOT_RT/" 2>/dev/null) && log "rootfs runtime restored from LIVE_RT"
     fi
   fi
-  if [ -f "$ROOT_RT/server.js" ]; then
+  # v164.11 — while a forge compiles, the server stays DOWN: the respawn
+  # would eat the ~400MB the compile needs and the kernel OOM-kills the
+  # build again. The respawn happens naturally on the next recovery pass
+  # (after the forge finishes) — with the NEW build already in place.
+  if [ -f "$BASE/.forge-active" ]; then
+    log "forge compiling — deferring runtime respawn (memory budget)"
+  elif [ -f "$ROOT_RT/server.js" ]; then
     cd "$ROOT_RT" || exit 1
     setsid nohup bash -c "cd '$ROOT_RT' && set -a && . '$BASE/.env' 2>/dev/null; set +a; exec env PORT=3000 HOSTNAME=127.0.0.1 NODE_ENV=production NODE_OPTIONS='--max-old-space-size=${HEAP_CAP}' DATABASE_URL='file:$BASE/db/custom.db' node server.js >> '$BASE/ca-runtime.log' 2>&1" </dev/null >/dev/null 2>&1 &
     log "cloudagent runtime respawned (self-contained @ rootfs copy, port 3000)"

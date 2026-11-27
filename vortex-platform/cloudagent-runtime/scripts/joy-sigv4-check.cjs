@@ -1,6 +1,3 @@
-const fs = require('fs')
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
 #!/usr/bin/env node
 /** Standalone Joy S3 SigV4 auth check: signed ListBuckets vs anonymous. */
 const { createHmac, createHash } = require('crypto');

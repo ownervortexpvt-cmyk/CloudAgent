@@ -1,6 +1,3 @@
-const fs = require('fs')
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
 /**
  * save-joy-storage.js — v161: connect the JOY SERVICE S3 vault (idempotent).
  * Values are the owner-provided keys + the endpoint/bucket proven in the

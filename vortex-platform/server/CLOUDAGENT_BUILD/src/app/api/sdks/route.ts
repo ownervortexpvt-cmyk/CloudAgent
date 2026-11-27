@@ -129,10 +129,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: e?.message }, { status: 500 })
     }
   }
-  const toolchains = MANAGED.map(m => ({
-    ...m,
-    present: (() => { try { return fs.existsSync(path.join(BASE, m.probe)) } catch { return false } })(),
-  }))
+  // v164.9 — probes via detached child + 60s cache: sync existsSync on the
+  // ossfs-backed sdk/ froze the whole event loop under FUSE congestion.
+  const g = globalThis as any
+  let toolchains: any[] = g.__vortexSdkProbe?.data || null
+  if (!toolchains && !g.__vortexSdkProbe?.pending) {
+    g.__vortexSdkProbe = { ...(g.__vortexSdkProbe || {}), pending: true }
+    try {
+      const { execFile } = await import('child_process')
+      const script = MANAGED.map(m => `if [ -e "${path.join(BASE, m.probe)}" ]; then echo "${m.name}|1"; else echo "${m.name}|0"; fi`).join('\n')
+      const out = await new Promise<string>((resolve) => {
+        execFile('bash', ['-c', script], { timeout: 30_000 }, (err, stdout) => resolve(String(stdout || '')))
+      })
+      const pm = new Map(out.split('\n').filter(Boolean).map(l => [l.split('|')[0], l.split('|')[1] === '1']))
+      toolchains = MANAGED.map(m => ({ ...m, present: pm.get(m.name) === true }))
+      g.__vortexSdkProbe = { at: Date.now(), data: toolchains, pending: false }
+    } catch { g.__vortexSdkProbe = { ...(g.__vortexSdkProbe || {}), pending: false } }
+  }
+  if (!toolchains) toolchains = MANAGED.map(m => ({ ...m, present: false }))
   return NextResponse.json({
     toolchains,
     custom: readCustomSdks(),

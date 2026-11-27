@@ -73,10 +73,7 @@ async function api(path, opts = {}, cookie = '', retries = 2) {
   console.log('[storage provider]', JSON.stringify(results.storage));
 
   // 5. issue platform keys
-  const fs = require('fs')
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
-;
+  const fs = require('fs');
   const envPath = '/home/z/my-project/.env';
   let env = fs.readFileSync(envPath, 'utf8');
   const keyMap = {

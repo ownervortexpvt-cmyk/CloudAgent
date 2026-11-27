@@ -92,11 +92,38 @@ export async function GET(req: NextRequest) {
   const totalMem = os.totalmem()
   const freeMem = os.freemem()
 
-  const toolchains = MANAGED_TOOLCHAINS.map((t) => {
-    let present = false
-    try { present = fs.existsSync(path.join(ROOT, t.probe)) } catch {}
-    return { name: t.name, label: t.label, version: t.version, present }
-  })
+  // v164.9 — TOOLCHAIN PROBES MUST NEVER BLOCK THE EVENT LOOP: the probes
+  // stat files under sdk/ → ossfs (FUSE). One sync existsSync on a congested
+  // FUSE mount froze the ENTIRE server (all routes + :3000 dead while the
+  // process lived) whenever the owner's admin panel polled this endpoint.
+  // Probes now run in a detached child process (worst case: the child hangs,
+  // the server never does) with a 60s module-level cache.
+  const g = globalThis as any
+  const now = Date.now()
+  if (!g.__vortexTcProbe || now - g.__vortexTcProbe.at > 60_000) {
+    g.__vortexTcProbe = { at: now, data: null as null | Array<{ name: string; label: string; version: string; present: boolean }>, pending: false }
+  }
+  let toolchains = g.__vortexTcProbe.data
+  if (!toolchains && !g.__vortexTcProbe.pending) {
+    g.__vortexTcProbe.pending = true
+    try {
+      const { execFile } = await import('child_process')
+      const probeScript = MANAGED_TOOLCHAINS.map((t) =>
+        `if [ -e "${path.join(ROOT, t.probe)}" ]; then echo "${t.name}|1"; else echo "${t.name}|0"; fi`,
+      ).join('\n')
+      const out = await new Promise<string>((resolve) => {
+        execFile('bash', ['-c', probeScript], { timeout: 30_000 }, (err, stdout) => resolve(String(stdout || '')))
+      })
+      const presentMap = new Map(out.split('\n').filter(Boolean).map((l) => [l.split('|')[0], l.split('|')[1] === '1']))
+      toolchains = MANAGED_TOOLCHAINS.map((t) => ({ name: t.name, label: t.label, version: t.version, present: presentMap.get(t.name) === true }))
+      g.__vortexTcProbe.data = toolchains
+    } catch {}
+    g.__vortexTcProbe.pending = false
+  }
+  if (!toolchains) {
+    // First poll after boot: return honest "probing" state, never block.
+    toolchains = MANAGED_TOOLCHAINS.map((t) => ({ name: t.name, label: t.label, version: t.version, present: false }))
+  }
 
   return NextResponse.json({
     ok: true,

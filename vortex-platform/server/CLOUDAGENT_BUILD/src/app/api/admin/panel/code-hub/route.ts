@@ -134,6 +134,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, tokens: await listEcoTokens() })
   }
 
+  // v164 — commit history: the honest push log (who pushed what, when).
+  if (view === 'commits') {
+    const raw = await gitBare(['log', '--pretty=format:%H%x1f%an%x1f%aI%x1f%s', '-20'])
+    const commits = raw.split('\n').filter(Boolean).map(line => {
+      const [hash, author, date, subject] = line.split('\x1f')
+      return { hash, author, date, subject }
+    })
+    const head = (await gitBare(['rev-parse', '--short', 'HEAD'])).trim()
+    return NextResponse.json({ ok: true, head, commits })
+  }
+
   if (view === 'tree') {
     const rel = req.nextUrl.searchParams.get('path') || ''
     const abs = rel ? safeBrowserPath(rel) : ECOSYSTEM_LIVE
@@ -224,7 +235,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: queued, error: queued ? undefined : 'could not spawn deploy runner' })
   }
 
-  return NextResponse.json({ ok: false, error: 'unknown action — use create-token | revoke-token | redeploy' }, { status: 400 })
+  // v164 — export-source: full source archive of HEAD as a zip in download/.
+  // Uses git archive on the bare repo — never touches the live tree.
+  if (action === 'export-source') {
+    const { execFile } = await import('child_process')
+    const head = (await gitBare(['rev-parse', '--short', 'HEAD'])).trim() || 'head'
+    const outName = `vortex-ecosystem-source-${head}-${Date.now()}.zip`
+    const outPath = path.join('/home/z/my-project/download', outName)
+    const okZip = await new Promise<boolean>((resolve) => {
+      execFile('git', ['--git-dir', ECOSYSTEM_BARE, 'archive', '--format=zip', '-o', outPath, 'HEAD'], { timeout: 60_000 }, (err) => resolve(!err))
+    })
+    if (!okZip) return NextResponse.json({ ok: false, error: 'git archive failed' }, { status: 500 })
+    let size = 0
+    try { size = (await fs.stat(outPath)).size } catch {}
+    return NextResponse.json({ ok: true, file: outName, size, head })
+  }
+
+  return NextResponse.json({ ok: false, error: 'unknown action — use create-token | revoke-token | redeploy | export-source' }, { status: 400 })
 }
 
 // v152.1 hidden-file filter sync

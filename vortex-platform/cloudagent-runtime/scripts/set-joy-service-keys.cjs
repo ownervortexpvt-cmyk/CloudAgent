@@ -2,9 +2,6 @@
 /** Store JOY SERVICE storage keys in the vault settings (secret encrypted). */
 const crypto = require('crypto')
 const fs = require('fs')
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
-
 const { PrismaClient } = require('@prisma/client')
 
 function getSecret() {

@@ -36,6 +36,7 @@ model Project {
   settings  ProjectSetting[]
   envVars   EnvVar[]
   schedules Schedule[]
+  pipelineRuns PipelineRun[]
 
   @@index([lastOpenedAt])
   @@index([workspaceId])
@@ -719,4 +720,54 @@ model EmailLog {
   @@index([status, createdAt])
   @@index([to])
   @@index([userId])
+}
+
+// ─── AUTONOMOUS LIFECYCLE PIPELINE (v164) ──────────────────────────────────
+// The 12-stage autonomous software development engine. ADDITIVE ONLY —
+// existing models/tables are untouched. One PipelineRun = one full lifecycle
+// attempt for a project; PipelineStage rows carry the honest per-stage state
+// (never collapsed into one vague "done").
+model PipelineRun {
+  id             String    @id @default(cuid())
+  projectId      String
+  task           String
+  targets        String    @default("[\"web\"]") // JSON array: web | android | windows | ios | source | docs
+  status         String    @default("queued") // queued | running | awaiting_manual_test | awaiting_deploy_approval | completed | failed | cancelled
+  currentStage   String    @default("plan")
+  summary        String    @default("")
+  error          String?
+  runId          String? // run-buffer runId — live events via POST /api/agent/resume
+  agentRunId     String? // linked AgentRun row (the CODE stage run)
+  deployApproval Boolean   @default(true) // production deploy needs a human YES
+  autoDebug      Boolean   @default(true) // auto-fix + rebuild + retest on failure
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stages  PipelineStage[]
+
+  @@index([projectId, createdAt])
+  @@index([status])
+}
+
+model PipelineStage {
+  id         String    @id @default(cuid())
+  runId      String
+  key        String // plan | design | code | deps | build | autotest | manualtest | debug | security | deploy | monitor | autoupdate
+  name       String
+  order      Int       @default(0)
+  status     String    @default("pending") // pending | running | passed | failed | skipped | awaiting_human | approved
+  attempt    Int       @default(1)
+  agent      String    @default("") // which specialist agent owned this stage
+  detail     String    @default("")
+  logs       String    @default("")
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  run PipelineRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
+  @@unique([runId, key])
+  @@index([runId, order])
 }

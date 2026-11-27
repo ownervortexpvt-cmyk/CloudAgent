@@ -1,6 +1,3 @@
-import fs from 'fs'
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
 #!/usr/bin/env node
 /**
  * fix-all.mjs — one-shot owner-side fixes:

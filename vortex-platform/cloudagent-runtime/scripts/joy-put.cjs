@@ -11,10 +11,7 @@
  */
 const { createHmac, createHash } = require('crypto');
 const { execFileSync } = require('child_process');
-const fs = require('fs')
-let SECRETS = {}
-try { SECRETS = JSON.parse(fs.readFileSync('/home/z/my-project/.secrets/vortex-secrets.json', 'utf8')) } catch {}
-;
+const fs = require('fs');
 
 const ACCESS = (SECRETS.joyAccessKey || '');
 const SECRET = (SECRETS.joySecretKey || '');

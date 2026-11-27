@@ -36,6 +36,10 @@ projects/
 upload/
 .selfupdate-running
 
+# v167.2 — backend database snapshots: private-data branch only
+backend-database/data.sql
+backend-database/custom.db
+
 # v167 — heavy toolchain archives never belong in git
 .flutter-setup/
 *.tar
