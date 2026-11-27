@@ -1,4 +1,4 @@
--- Vortex Cloud Agent backend schema (generated 2026-11-27T21:27:19.832Z)
+-- Vortex Cloud Agent backend schema (generated 2026-11-27T21:53:42.958Z)
 -- Restore: sqlite3 new.db < schema.sql
 PRAGMA journal_mode=WAL;
 BEGIN;
@@ -348,6 +348,40 @@ CREATE TABLE "Payment" (
     "paidAt" DATETIME,
     CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AuthUser" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
+CREATE TABLE "PipelineRun" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "projectId" TEXT NOT NULL,
+    "task" TEXT NOT NULL,
+    "targets" TEXT NOT NULL DEFAULT '["web"]',
+    "status" TEXT NOT NULL DEFAULT 'queued',
+    "currentStage" TEXT NOT NULL DEFAULT 'plan',
+    "summary" TEXT NOT NULL DEFAULT '',
+    "error" TEXT,
+    "runId" TEXT,
+    "agentRunId" TEXT,
+    "deployApproval" BOOLEAN NOT NULL DEFAULT true,
+    "autoDebug" BOOLEAN NOT NULL DEFAULT true,
+    "startedAt" DATETIME,
+    "finishedAt" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "PipelineRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE TABLE "PipelineStage" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "runId" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "order" INTEGER NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "attempt" INTEGER NOT NULL DEFAULT 1,
+    "agent" TEXT NOT NULL DEFAULT '',
+    "detail" TEXT NOT NULL DEFAULT '',
+    "logs" TEXT NOT NULL DEFAULT '',
+    "startedAt" DATETIME,
+    "finishedAt" DATETIME,
+    CONSTRAINT "PipelineStage_runId_fkey" FOREIGN KEY ("runId") REFERENCES "PipelineRun" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE "Project" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT NOT NULL,
@@ -527,6 +561,10 @@ CREATE INDEX "ModelBenchmark_task_score_idx" ON "ModelBenchmark"("task", "score"
 CREATE UNIQUE INDEX "Payment_razorpayOrderId_key" ON "Payment"("razorpayOrderId");
 CREATE INDEX "Payment_status_createdAt_idx" ON "Payment"("status", "createdAt");
 CREATE INDEX "Payment_userId_createdAt_idx" ON "Payment"("userId", "createdAt");
+CREATE INDEX "PipelineRun_projectId_createdAt_idx" ON "PipelineRun"("projectId", "createdAt");
+CREATE INDEX "PipelineRun_status_idx" ON "PipelineRun"("status");
+CREATE UNIQUE INDEX "PipelineStage_runId_key_key" ON "PipelineStage"("runId", "key");
+CREATE INDEX "PipelineStage_runId_order_idx" ON "PipelineStage"("runId", "order");
 CREATE INDEX "ProjectCollaborator_projectId_idx" ON "ProjectCollaborator"("projectId");
 CREATE UNIQUE INDEX "ProjectCollaborator_projectId_userId_key" ON "ProjectCollaborator"("projectId", "userId");
 CREATE INDEX "ProjectCollaborator_userId_idx" ON "ProjectCollaborator"("userId");
